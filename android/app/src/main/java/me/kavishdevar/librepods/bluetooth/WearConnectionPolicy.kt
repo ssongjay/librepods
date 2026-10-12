@@ -1,8 +1,8 @@
 package me.kavishdevar.librepods.bluetooth
 
-/** One bounded connection sequence per wear session, independent of rotating BLE addresses. */
+/** Connect only after an observed out-of-ear to in-ear transition, never on rediscovery alone. */
 class WearConnectionPolicy {
-    private var worn = false
+    private var worn: Boolean? = null
     private var session = 0L
     private var attempts = 0
     private var completed = false
@@ -10,20 +10,34 @@ class WearConnectionPolicy {
     private var nextAttemptAt = 0L
 
     @Synchronized
-    fun observe(enabled: Boolean, isWorn: Boolean, audioConnected: Boolean, nowMs: Long): Long? {
-        if (!enabled || !isWorn) {
-            if (worn) session++
+    @JvmOverloads
+    fun observe(
+        enabled: Boolean, isWorn: Boolean, audioConnected: Boolean, nowMs: Long,
+        otherDeviceActive: Boolean = false
+    ): Long? {
+        if (!enabled) {
+            forgetObservation()
+            return null
+        }
+        if (!isWorn) {
+            if (worn != false) session++
             worn = false
             attempts = 0
             completed = false
             nextAttemptAt = 0L
             return null
         }
-        if (!worn) {
+        if (worn == null) {
+            // Startup or a BLE gap is not evidence that the user just put the earbuds in.
+            worn = true
+            completed = true
+            return null
+        }
+        if (worn == false) {
             worn = true
             session++
         }
-        if (audioConnected) completed = true
+        if (audioConnected || otherDeviceActive) completed = true
         if (completed || inFlight != null || attempts >= MAX_ATTEMPTS || nowMs < nextAttemptAt) {
             return null
         }
@@ -33,13 +47,22 @@ class WearConnectionPolicy {
     }
 
     @Synchronized
-    fun isCurrent(token: Long): Boolean = worn && !completed && session == token && inFlight == token
+    fun isCurrent(token: Long): Boolean = worn == true && !completed && session == token && inFlight == token
+
+    @Synchronized
+    fun forgetObservation() {
+        if (worn != null) session++
+        worn = null
+        attempts = 0
+        completed = false
+        nextAttemptAt = 0L
+    }
 
     @Synchronized
     fun finish(token: Long, nowMs: Long, audioConnected: Boolean) {
         if (inFlight != token) return
         inFlight = null
-        if (session == token && worn) {
+        if (session == token && worn == true) {
             if (audioConnected) completed = true
             nextAttemptAt = nowMs + RETRY_DELAY_MS
         }

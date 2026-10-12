@@ -67,7 +67,7 @@
     <string name="no_logs_found">No saved logs found</string>
     <string name="takeover_header">Auto-Connect preferences</string>
     <string name="connect_when_worn">Connect when wearing AirPods</string>
-    <string name="connect_when_worn_description">Connect your paired AirPods to this phone when you put in either earbud. Pair and connect once first.</string>
+    <string name="connect_when_worn_description">Connect after taking AirPods out and putting in either earbud. Keep another device connected while it is playing media or on a call. Pair and connect once first.</string>
     <string name="resume_playback_when_worn">Resume playback when wearing AirPods</string>
     <string name="resume_playback_when_worn_description">Resume media when putting AirPods in your ears. Turn off to connect without starting playback.</string>
     <string name="takeover_airpods_state">Connect to your AirPods when its status is:</string>
