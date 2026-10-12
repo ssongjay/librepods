@@ -139,7 +139,7 @@ class PopupWindow(
 
                 val vid = mView.findViewById<VideoView>(R.id.video)
                 vid.setAudioFocusRequest(AudioManager.AUDIOFOCUS_NONE)
-                vid.setVideoPath("android.resource://me.kavishdevar.librepods/" + R.raw.connected)
+                vid.setVideoPath("android.resource://${context.packageName}/" + R.raw.connected)
                 vid.resolveAdjustedSize(vid.width, vid.height)
                 vid.start()
                 vid.setOnCompletionListener {

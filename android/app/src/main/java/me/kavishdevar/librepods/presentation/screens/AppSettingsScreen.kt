@@ -292,6 +292,18 @@ fun AppSettingsScreen(
 
             StyledList(title = stringResource(R.string.takeover_airpods_state)) {
                 StyledToggle(
+                    label = stringResource(R.string.connect_when_worn),
+                    description = stringResource(R.string.connect_when_worn_description),
+                    checked = state.connectWhenWorn,
+                    onCheckedChange = viewModel::setConnectWhenWorn
+                )
+                StyledToggle(
+                    label = stringResource(R.string.resume_playback_when_worn),
+                    description = stringResource(R.string.resume_playback_when_worn_description),
+                    checked = state.resumePlaybackWhenWorn,
+                    onCheckedChange = viewModel::setResumePlaybackWhenWorn
+                )
+                StyledToggle(
                     label = stringResource(R.string.takeover_disconnected),
                     description = stringResource(R.string.takeover_disconnected_desc),
                     checked = state.takeoverWhenDisconnected,

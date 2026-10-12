@@ -31,6 +31,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.appwidget.AppWidgetManager
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothA2dp
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothManager
@@ -55,6 +56,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelUuid
+import android.os.SystemClock
 import android.os.UserHandle
 import android.provider.Settings
 import android.telecom.TelecomManager
@@ -73,6 +75,8 @@ import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -89,6 +93,7 @@ import me.kavishdevar.librepods.bluetooth.ATTHandles
 import me.kavishdevar.librepods.bluetooth.ATTManagerv2
 import me.kavishdevar.librepods.bluetooth.BLEManager
 import me.kavishdevar.librepods.bluetooth.BluetoothConnectionManager
+import me.kavishdevar.librepods.bluetooth.WearConnectionPolicy
 import me.kavishdevar.librepods.bluetooth.createBluetoothSocket
 import me.kavishdevar.librepods.data.AirPodsInstance
 import me.kavishdevar.librepods.data.AirPodsModels
@@ -169,6 +174,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         var relativeConversationalAwarenessVolume: Boolean = true,
         var headGestures: Boolean = true,
         var disconnectWhenNotWearing: Boolean = false,
+        var connectWhenWorn: Boolean = true,
+        var resumePlaybackWhenWorn: Boolean = false,
         var conversationalAwarenessVolume: Int = 43,
         var qsClickBehavior: String = "cycle",
         var bleOnlyMode: Boolean = false,
@@ -235,6 +242,68 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
     lateinit var bleManager: BLEManager
 
+    private val wearConnectionPolicy = WearConnectionPolicy()
+    private val wearConnectionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Volatile private var wearAudioProfile: BluetoothA2dp? = null
+
+    @SuppressLint("MissingPermission")
+    private fun requestWearConnection(status: BLEManager.AirPodsStatus) {
+        val worn = status.isLeftInEar || status.isRightInEar
+        val enabled = config.connectWhenWorn && !config.bleOnlyMode
+        if (!enabled || !worn) {
+            wearConnectionPolicy.observe(enabled, worn, false, SystemClock.elapsedRealtime())
+            return
+        }
+        // BLEManager only delivers broadcasts verified with this AirPods' stored identity key.
+        val adapter = getSystemService(BluetoothManager::class.java).adapter ?: return
+        val targetAddress = sharedPreferences.getString("mac_address", "") ?: return
+        val target = adapter.bondedDevices.firstOrNull { it.address == targetAddress } ?: return
+        val profile = wearAudioProfile ?: return
+        val token = wearConnectionPolicy.observe(
+            enabled, worn,
+            profile.getConnectionState(target) == BluetoothProfile.STATE_CONNECTED,
+            SystemClock.elapsedRealtime()
+        ) ?: return
+
+        wearConnectionScope.launch {
+            try {
+                if (!isCurrentWearRequest(token, targetAddress)) return@launch
+                // Request audio immediately; control-channel setup must not delay the user's audio.
+                Log.d(TAG, "Wear connection: requesting audio for paired AirPods")
+                connectAudio(this@AirPodsService, target) {
+                    isCurrentWearRequest(token, targetAddress)
+                }
+                if (BluetoothConnectionManager.aacpSocket?.isConnected != true) {
+                    connectToSocket(adapter, target)
+                }
+                if (!isCurrentWearRequest(token, targetAddress)) return@launch
+                // Check the actual audio profile; a successful control socket alone is insufficient.
+                repeat(10) {
+                    if (profile.getConnectionState(target) == BluetoothProfile.STATE_CONNECTED ||
+                        !isCurrentWearRequest(token, targetAddress)) return@launch
+                    delay(300)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Wear connection attempt failed", e)
+            } finally {
+                wearConnectionPolicy.finish(
+                    token, SystemClock.elapsedRealtime(),
+                    runCatching {
+                        profile.getConnectionState(target) == BluetoothProfile.STATE_CONNECTED
+                    }.getOrDefault(false)
+                )
+            }
+        }
+    }
+
+    private fun isCurrentWearRequest(token: Long, targetAddress: String): Boolean {
+        val latest = bleManager.getMostRecentStatus() ?: return false
+        return config.connectWhenWorn && wearConnectionPolicy.isCurrent(token) &&
+            sharedPreferences.getString("mac_address", "") == targetAddress &&
+            System.currentTimeMillis() - latest.lastSeen <= 3_000L &&
+            (latest.isLeftInEar || latest.isRightInEar)
+    }
+
     companion object {
         init {
             System.loadLibrary("bluetooth_socket")
@@ -246,7 +315,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         override fun onDeviceStatusChanged(
             device: BLEManager.AirPodsStatus, previousStatus: BLEManager.AirPodsStatus?
         ) {
-            if (device.connectionState == "Disconnected" && BluetoothConnectionManager.aacpSocket?.isConnected != true) { // should never happen unless android messes up and sends us a stale broadcast
+            requestWearConnection(device)
+            if (!config.connectWhenWorn && device.connectionState == "Disconnected" && BluetoothConnectionManager.aacpSocket?.isConnected != true) { // retain upstream behavior when wear connection is disabled
                 Log.d(TAG, "Seems no device has taken over, we will.")
                 val bluetoothManager = getSystemService(BluetoothManager::class.java)
                 val bluetoothAdapter = bluetoothManager.adapter
@@ -278,6 +348,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         }
 
         override fun onBroadcastFromNewAddress(device: BLEManager.AirPodsStatus) {
+            requestWearConnection(device)
             Log.d(TAG, "New address detected")
         }
 
@@ -317,6 +388,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
             device: BLEManager.AirPodsStatus, leftInEar: Boolean, rightInEar: Boolean
         ) {
             Log.d(TAG, "Ear state changed - Left: $leftInEar, Right: $rightInEar")
+            requestWearConnection(device)
 
             // In BLE-only mode, ear detection is purely based on BLE data
             if (config.bleOnlyMode) {
@@ -346,6 +418,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         }
 
         override fun onDeviceDisappeared() {
+            wearConnectionPolicy.observe(false, false, false, SystemClock.elapsedRealtime())
             Log.d(TAG, "All disappeared")
             updateNotificationContent(
                 false
@@ -466,6 +539,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                 if (!contains("disconnect_when_not_wearing")) putBoolean(
                     "disconnect_when_not_wearing", false
                 )
+                if (!contains("connect_when_worn")) putBoolean("connect_when_worn", true)
+                if (!contains("resume_playback_when_worn")) putBoolean("resume_playback_when_worn", false)
 
                 // AirPods state-based takeover
                 if (!contains("takeover_when_disconnected")) putBoolean(
@@ -763,7 +838,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
                                 if (profile == BluetoothProfile.A2DP) {
                                     val connectedDevices = proxy.connectedDevices
-                                    if (connectedDevices.isNotEmpty()) {
+                                    if (connectedDevices.any { it.address == device.address }) {
 //                                        if (!CrossDevice.isAvailable) {
                                         CoroutineScope(Dispatchers.IO).launch {
                                             connectToSocket(bluetoothAdapter, device)
@@ -797,6 +872,15 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         CoroutineScope(Dispatchers.IO).launch {
             bleManager.startScanning()
         }
+        bluetoothAdapter.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
+            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                wearAudioProfile = proxy as? BluetoothA2dp
+            }
+
+            override fun onServiceDisconnected(profile: Int) {
+                wearAudioProfile = null
+            }
+        }, BluetoothProfile.A2DP)
     }
 
     @Suppress("unused")
@@ -1281,7 +1365,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
             val nowSingle = newInEarData.count { it } == 1
 
             if (wasNone && nowSingle) {
-                MediaController.sendPlay()
+                if (config.resumePlaybackWhenWorn) MediaController.sendPlay()
                 MediaController.iPausedTheMedia = false
                 return
             }
@@ -1303,7 +1387,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
             if (newInEarData.sorted() != inEarData.sorted()) {
                 if (inEar) {
-                    if (!justEnabledA2dp) {
+                    if (!justEnabledA2dp && config.resumePlaybackWhenWorn) {
                         MediaController.sendPlay()
                         MediaController.iPausedTheMedia = false
                     }
@@ -1335,7 +1419,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                     if (state == BluetoothProfile.STATE_CONNECTED && previousState != BluetoothProfile.STATE_CONNECTED && device?.address == this@AirPodsService.device?.address) {
 
                         Log.d("MediaController", "A2DP connected, sending play command")
-                        MediaController.sendPlay()
+                        if (config.resumePlaybackWhenWorn) MediaController.sendPlay()
                         MediaController.iPausedTheMedia = false
 
                         context.unregisterReceiver(this)
@@ -1370,6 +1454,8 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
             disconnectWhenNotWearing = sharedPreferences.getBoolean(
                 "disconnect_when_not_wearing", false
             ),
+            connectWhenWorn = sharedPreferences.getBoolean("connect_when_worn", true),
+            resumePlaybackWhenWorn = sharedPreferences.getBoolean("resume_playback_when_worn", false),
             conversationalAwarenessVolume = sharedPreferences.getInt(
                 "conversational_awareness_volume", 43
             ),
@@ -1484,6 +1570,14 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
             "head_gestures" -> config.headGestures = preferences.getBoolean(key, true)
             "disconnect_when_not_wearing" -> config.disconnectWhenNotWearing =
+                preferences.getBoolean(key, false)
+            "connect_when_worn" -> {
+                config.connectWhenWorn = preferences.getBoolean(key, true)
+                if (!config.connectWhenWorn) {
+                    wearConnectionPolicy.observe(false, false, false, SystemClock.elapsedRealtime())
+                }
+            }
+            "resume_playback_when_worn" -> config.resumePlaybackWhenWorn =
                 preferences.getBoolean(key, false)
 
             "conversational_awareness_volume" -> config.conversationalAwarenessVolume =
@@ -2210,7 +2304,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     private fun resToUri(resId: Int): Uri? {
         return try {
             Uri.Builder().scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                .authority("me.kavishdevar.librepods")
+                .authority(packageName)
                 .appendPath(applicationContext.resources.getResourceTypeName(resId))
                 .appendPath(applicationContext.resources.getResourceEntryName(resId)).build()
         } catch (_: Resources.NotFoundException) {
@@ -2361,7 +2455,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                     device.METADATA_MANUFACTURER_NAME,
                     instance.model.manufacturer.toByteArray()
                 ) && SystemApisUtils.setMetadata(
-                    device, device.METADATA_COMPANION_APP, "me.kavishdevar.librepods".toByteArray()
+                    device, device.METADATA_COMPANION_APP, packageName.toByteArray()
                 ) && SystemApisUtils.setMetadata(
                     device,
                     device.METADATA_UNTETHERED_CASE_LOW_BATTERY_THRESHOLD,
@@ -2634,6 +2728,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
     }
 
     @SuppressLint("MissingPermission", "UnspecifiedRegisterReceiverFlag")
+    @Synchronized
     fun connectToSocket(
         adapter: BluetoothAdapter, device: BluetoothDevice, manual: Boolean = false
     ) {
@@ -2709,7 +2804,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                                 )
                             }
                         }
-                        sendBroadcast(Intent(AirPodsNotifications.AIRPODS_L2CAP_CONNECTED))
+                        sendBroadcast(Intent(AirPodsNotifications.AIRPODS_L2CAP_CONNECTED).setPackage(packageName))
                     } catch (e: Exception) {
 //                        sharedPreferences.edit { putBoolean("connection_successful", false) }
                         Log.d(
@@ -2906,7 +3001,7 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                 override fun onServiceDisconnected(profile: Int) {}
             }, BluetoothProfile.A2DP)
             try {
-                device?.disconnect()
+                if (Build.VERSION.SDK_INT >= 37) device?.disconnect()
             } catch (e: Exception) {
                 Log.w(TAG, "device.disconnect() failed, $e")
             }
@@ -3014,11 +3109,15 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
         }
     }
 
-    fun connectAudio(context: Context, device: BluetoothDevice?) {
+    fun connectAudio(context: Context, device: BluetoothDevice?, shouldConnect: () -> Boolean = { true }) {
         val bluetoothAdapter = context.getSystemService(BluetoothManager::class.java).adapter
 
         bluetoothAdapter?.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                if (!shouldConnect()) {
+                    bluetoothAdapter.closeProfileProxy(profile, proxy)
+                    return
+                }
                 if (profile == BluetoothProfile.A2DP) {
                     if (context.checkSelfPermission("android.permission.BLUETOOTH_PRIVILEGED") == PackageManager.PERMISSION_GRANTED) {
                         try {
@@ -3045,12 +3144,15 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
                         }
                     }
                     else {
-                        val connectMethod =
-                            proxy.javaClass.getMethod("connect", BluetoothDevice::class.java)
-                        connectMethod.invoke(
-                            proxy, device
-                        )
-                        Log.d(TAG, "not setting connection policy for A2DP, no BLUETOOTH_PRIVILEGED permission. just called connect")
+                        try {
+                            val connectMethod = proxy.javaClass.getMethod("connect", BluetoothDevice::class.java)
+                            connectMethod.invoke(proxy, device)
+                            Log.d(TAG, "Requested A2DP connection without changing connection policy")
+                        } catch (e: Exception) {
+                            Log.w(TAG, "A2DP connection request rejected by the Bluetooth stack", e)
+                        } finally {
+                            bluetoothAdapter.closeProfileProxy(BluetoothProfile.A2DP, proxy)
+                        }
                     }
                 }
             }
@@ -3060,6 +3162,10 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
         bluetoothAdapter?.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                if (!shouldConnect()) {
+                    bluetoothAdapter.closeProfileProxy(profile, proxy)
+                    return
+                }
                 if (profile == BluetoothProfile.HEADSET) {
                     if (checkSelfPermission("android.permission.MODIFY_PHONE_STATE") == PackageManager.PERMISSION_GRANTED) {
                         try {
@@ -3106,6 +3212,12 @@ class AirPodsService : Service(), SharedPreferences.OnSharedPreferenceChangeList
 
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
+        wearConnectionScope.cancel()
+        wearAudioProfile?.let { profile ->
+            getSystemService(BluetoothManager::class.java).adapter
+                ?.closeProfileProxy(BluetoothProfile.A2DP, profile)
+        }
+        wearAudioProfile = null
         clearPacketLogs()
         Log.d(TAG, "Service stopped is being destroyed for some reason!")
 

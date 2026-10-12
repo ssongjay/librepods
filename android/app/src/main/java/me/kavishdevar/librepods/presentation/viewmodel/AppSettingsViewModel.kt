@@ -20,6 +20,8 @@ data class AppSettingsUiState(
     val conversationalAwarenessPauseMusicEnabled: Boolean = false,
     val relativeConversationalAwarenessVolumeEnabled: Boolean = true,
     val disconnectWhenNotWearing: Boolean = false,
+    val connectWhenWorn: Boolean = true,
+    val resumePlaybackWhenWorn: Boolean = false,
     val takeoverWhenDisconnected: Boolean = false,
     val takeoverWhenIdle: Boolean = false,
     val takeoverWhenMusic: Boolean = false,
@@ -139,6 +141,8 @@ class AppSettingsViewModel(application: Application) : AndroidViewModel(applicat
                 conversationalAwarenessPauseMusicEnabled = sharedPreferences.getBoolean("conversational_awareness_pause_music", false),
                 relativeConversationalAwarenessVolumeEnabled = sharedPreferences.getBoolean("relative_conversational_awareness_volume", true),
                 disconnectWhenNotWearing = sharedPreferences.getBoolean("disconnect_when_not_wearing", false),
+                connectWhenWorn = sharedPreferences.getBoolean("connect_when_worn", true),
+                resumePlaybackWhenWorn = sharedPreferences.getBoolean("resume_playback_when_worn", false),
                 takeoverWhenDisconnected = sharedPreferences.getBoolean("takeover_when_disconnected", false),
                 takeoverWhenIdle = sharedPreferences.getBoolean("takeover_when_idle", false),
                 takeoverWhenMusic = sharedPreferences.getBoolean("takeover_when_music", false),
@@ -175,6 +179,16 @@ class AppSettingsViewModel(application: Application) : AndroidViewModel(applicat
     fun setDisconnectWhenNotWearing(enabled: Boolean) {
         sharedPreferences.edit { putBoolean("disconnect_when_not_wearing", enabled) }
         _uiState.update { it.copy(disconnectWhenNotWearing = enabled) }
+    }
+
+    fun setConnectWhenWorn(enabled: Boolean) {
+        sharedPreferences.edit { putBoolean("connect_when_worn", enabled) }
+        _uiState.update { it.copy(connectWhenWorn = enabled) }
+    }
+
+    fun setResumePlaybackWhenWorn(enabled: Boolean) {
+        sharedPreferences.edit { putBoolean("resume_playback_when_worn", enabled) }
+        _uiState.update { it.copy(resumePlaybackWhenWorn = enabled) }
     }
 
     fun setTakeoverWhenDisconnected(enabled: Boolean) {

@@ -72,10 +72,11 @@ android {
             }
         }
         debug {
+            applicationIdSuffix = ".inje"
             if (releaseSigningAvailable) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            versionNameSuffix = "-debug"
+            versionNameSuffix = "-inje-wear"
             defaultConfig {
                 minSdk = 33
             }

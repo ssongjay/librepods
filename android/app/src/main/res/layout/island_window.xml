@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Inflated by a Service with platform views, not an AppCompat inflater. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UseAppTint"
     android:id="@+id/island_window_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"

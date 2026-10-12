@@ -62,7 +62,7 @@ class BLEManager(private val context: Context) {
     )
 
     fun getMostRecentStatus(): AirPodsStatus? {
-        return deviceStatusMap.values.maxByOrNull { it.lastSeen }
+        return latestStatus
     }
 
     interface AirPodsStatusListener {
@@ -78,11 +78,14 @@ class BLEManager(private val context: Context) {
     private var mScanCallback: ScanCallback? = null
     private var airPodsStatusListener: AirPodsStatusListener? = null
     private val deviceStatusMap = mutableMapOf<String, AirPodsStatus>()
+    // Connection workers read this immutable snapshot without traversing the scanner's mutable map.
+    @Volatile private var latestStatus: AirPodsStatus? = null
     private val verifiedAddresses = mutableSetOf<String>()
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private var currentGlobalLidState: Boolean? = null
     private var lastBroadcastTime: Long = 0
     private val processedAddresses = mutableSetOf<String>()
+    private var lastProcessedTimestampNanos = Long.MIN_VALUE
 
     private val lastValidCaseBatteryMap = mutableMapOf<String, Int>()
     private val modelNames = mapOf(
@@ -176,7 +179,11 @@ class BLEManager(private val context: Context) {
 
                 override fun onBatchScanResults(results: List<ScanResult>) {
                     processedAddresses.clear()
-                    for (result in results) {
+                    // A batch can contain old wear states for the same address. Keep its newest one.
+                    val latestResults = results.groupBy { it.device.address }.values
+                        .map { it.maxBy { result -> result.timestampNanos } }
+                        .sortedBy { it.timestampNanos }
+                    for (result in latestResults) {
                         processScanResult(result)
                     }
                 }
@@ -253,6 +260,7 @@ class BLEManager(private val context: Context) {
         try {
             val scanRecord = result.scanRecord ?: return
             val address = result.device.address
+            if (result.timestampNanos < lastProcessedTimestampNanos) return
 
             if (processedAddresses.contains(address)) {
                 return
@@ -271,6 +279,7 @@ class BLEManager(private val context: Context) {
             }
 
             processedAddresses.add(address)
+            lastProcessedTimestampNanos = result.timestampNanos
             lastBroadcastTime = System.currentTimeMillis()
 
             val encryptionKey = getEncryptionKeyFromPreferences()
@@ -283,6 +292,7 @@ class BLEManager(private val context: Context) {
 
             val previousStatus = deviceStatusMap[address]
             deviceStatusMap[address] = parsedStatus
+            latestStatus = parsedStatus
 
             airPodsStatusListener?.let { listener ->
                 if (previousStatus == null) {
@@ -400,6 +410,7 @@ class BLEManager(private val context: Context) {
             deviceStatusMap.remove(device.key)
             Log.d(TAG, "Removed stale device from tracking: ${device.key}")
         }
+        latestStatus = deviceStatusMap.values.maxByOrNull { it.lastSeen }
 
         if (hadDevices && deviceStatusMap.isEmpty()) {
             airPodsStatusListener?.onDeviceDisappeared()
