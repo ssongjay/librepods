@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>ko</string>
+    <key>CFBundleExecutable</key>
+    <string>LibrePodsMyMac</string>
+    <key>CFBundleIdentifier</key>
+    <string>me.ssongjay.librepods-my.mac</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>LibrePods My</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.2</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>휴대전화와 안전하게 연결하고 선택한 AirPods의 기기 전환을 조율하는 데 Bluetooth를 사용해요.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>휴대전화 LibrePods My가 이 Mac을 찾고 연결할 수 있도록 Bluetooth 주변기기 기능을 사용해요.</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>LibrePods My</string>
+</dict>
+</plist>

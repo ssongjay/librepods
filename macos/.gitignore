@@ -1,0 +1,6 @@
+.build/
+dist/
+work/
+
+# Keep the reproducible packaging script despite the root build-artifact glob.
+!build-app.sh
