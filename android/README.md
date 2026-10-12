@@ -69,7 +69,14 @@ non-debuggable even though this build task retains its upstream name.
 
 Keep the existing signing keystore when building later versions. A new signing
 key cannot update an installed personal build. Never commit the keystore or its
-credentials. Increment `versionCode` for each published update.
+credentials. Increment `versionCode` for each published update. Starting with internal
+build 69, use a separate display version (`0.1.0`, then e.g. `0.1.1` or `0.2.0`).
+The app version name and GitHub release title must agree: use the exact release
+title `LibrePods My <major.minor.patch>`, for example `LibrePods My 0.1.0`.
+The updater shows that display version and compares only the numeric internal
+tag when deciding whether an update is newer. Keep `my-v<versionCode>` tags so
+installed v66–v68 updaters continue to recognize later releases. Older installed
+apps show the internal number once; after upgrading they show the display version.
 
 Publish to `ssongjay/librepods` as a non-prerelease GitHub release with the tag
 `my-v<versionCode>` and the exact asset name `LibrePods-My.apk`. Point the release

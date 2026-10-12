@@ -22,6 +22,9 @@ internal object PersonalUpdatePolicy {
     private const val RELEASE_DOWNLOAD_BASE_URL =
         "https://github.com/ssongjay/librepods/releases/download"
     private val personalTag = Regex("my-v([1-9][0-9]*)")
+    private val personalReleaseName = Regex(
+        """LibrePods My ((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))""",
+    )
     private val sha256Digest = Regex("sha256:([0-9a-fA-F]{64})")
     private val allowedAssetHosts = setOf(
         "objects.githubusercontent.com",
@@ -31,6 +34,11 @@ internal object PersonalUpdatePolicy {
     @JvmStatic
     fun versionCode(tagName: String): Long? =
         personalTag.matchEntire(tagName)?.groupValues?.get(1)?.toLongOrNull()
+
+    /** The release title supplies the display version; the tag remains the update counter. */
+    @JvmStatic
+    fun displayVersion(releaseName: String): String? =
+        personalReleaseName.matchEntire(releaseName)?.groupValues?.get(1)
 
     @JvmStatic
     fun isStrictlyNewer(tagName: String, currentVersionCode: Long): Boolean =

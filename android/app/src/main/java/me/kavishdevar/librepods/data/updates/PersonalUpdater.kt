@@ -34,6 +34,7 @@ import org.json.JSONObject
 
 internal data class PersonalRelease(
     val versionCode: Long,
+    val versionName: String,
     val tagName: String,
     val downloadUrl: String,
 )
@@ -55,7 +56,7 @@ internal sealed interface PersonalUpdateState {
     data object Idle : PersonalUpdateState
     data object Checking : PersonalUpdateState
     data object UpToDate : PersonalUpdateState
-    data class Available(val versionCode: Long) : PersonalUpdateState
+    data class Available(val versionName: String) : PersonalUpdateState
     data class Error(
         val reason: PersonalUpdateError,
         val retry: PersonalUpdateRetry,
@@ -99,7 +100,7 @@ internal class PersonalUpdater(context: Context) {
                 _state.value = PersonalUpdateState.UpToDate
             } else {
                 availableRelease = release
-                _state.value = PersonalUpdateState.Available(release.versionCode)
+                _state.value = PersonalUpdateState.Available(release.versionName)
             }
         } catch (cancelled: CancellationException) {
             _state.value = PersonalUpdateState.Idle
@@ -146,7 +147,7 @@ internal class PersonalUpdater(context: Context) {
         }
         try {
             appContext.startActivity(browserIntent)
-            _state.value = PersonalUpdateState.Available(release.versionCode)
+            _state.value = PersonalUpdateState.Available(release.versionName)
         } catch (_: RuntimeException) {
             _state.value = PersonalUpdateState.Error(
                 PersonalUpdateError.BROWSER_UNAVAILABLE,
@@ -223,7 +224,9 @@ internal class PersonalUpdater(context: Context) {
                 throw UpdateFailure(PersonalUpdateError.INVALID_RELEASE)
             }
 
-            return PersonalRelease(versionCode, tagName, downloadUrl)
+            val versionName = PersonalUpdatePolicy.displayVersion(release.getString("name"))
+                ?: throw UpdateFailure(PersonalUpdateError.INVALID_RELEASE)
+            return PersonalRelease(versionCode, versionName, tagName, downloadUrl)
         } catch (failure: UpdateFailure) {
             throw failure
         } catch (_: JSONException) {

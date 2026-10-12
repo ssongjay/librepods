@@ -88,7 +88,7 @@ fun PersonalUpdateCard(modifier: Modifier = Modifier) {
         )
         is PersonalUpdateState.Available -> stringResource(
             R.string.personal_update_available_description,
-            currentState.versionCode,
+            currentState.versionName,
         )
         is PersonalUpdateState.Error -> errorDescription(currentState.reason)
     }

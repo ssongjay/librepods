@@ -3,13 +3,14 @@
     <string name="personal_update_section_title">LibrePods My 업데이트</string>
     <string name="personal_update_manual_description">버튼을 누를 때만 업데이트를 확인해요. APK는 브라우저에서 받고, 받은 파일을 열어 Android 설치 화면에서 직접 확인해야 해요.</string>
     <string name="personal_update_current_version">현재 버전</string>
+    <string name="personal_update_internal_build">내부 빌드 번호</string>
     <string name="personal_update_idle_description">LibrePods My %1$s</string>
     <string name="personal_update_checking">업데이트 확인 중…</string>
     <string name="personal_update_checking_description">GitHub에서 최신 LibrePods My 릴리스를 찾고 있어요.</string>
     <string name="personal_update_up_to_date">최신 버전이에요</string>
     <string name="personal_update_up_to_date_description">LibrePods My %1$s이 최신 버전이에요.</string>
     <string name="personal_update_available">업데이트가 있어요</string>
-    <string name="personal_update_available_description">개인 빌드 v%1$d가 있어요. 브라우저에서 다운로드하세요.</string>
+    <string name="personal_update_available_description">LibrePods My %1$s 버전이 있어요. 브라우저에서 다운로드하세요.</string>
     <string name="personal_update_failed">업데이트를 계속하지 못했어요</string>
     <string name="personal_update_check_button">확인</string>
     <string name="personal_update_browser_button">브라우저 열기</string>

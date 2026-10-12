@@ -117,7 +117,11 @@ fun ReleaseNotesScreen(
             )
 
             val versionName = BuildConfig.VERSION_NAME.removeSuffix("-debug").removeSuffix("-play")
-            val url = "https://github.com/kavishdevar/librepods/releases/v$versionName"
+            val url = if (BuildConfig.APPLICATION_ID.endsWith(".inje")) {
+                "https://github.com/ssongjay/librepods/releases/tag/my-v${BuildConfig.VERSION_CODE}"
+            } else {
+                "https://github.com/kavishdevar/librepods/releases/v$versionName"
+            }
             val fullText = "${stringResource(R.string.version)} $versionName"
             val textColor = MaterialTheme.colorScheme.primary
 

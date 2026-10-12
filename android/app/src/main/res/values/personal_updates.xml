@@ -4,13 +4,14 @@
     <string name="personal_update_section_title">LibrePods My updates</string>
     <string name="personal_update_manual_description">Update checks run only when you tap the button. The APK opens in your browser; open the downloaded file and confirm Android’s installer yourself.</string>
     <string name="personal_update_current_version">Current version</string>
+    <string name="personal_update_internal_build">Internal build number</string>
     <string name="personal_update_idle_description">LibrePods My %1$s</string>
     <string name="personal_update_checking">Checking for an update…</string>
     <string name="personal_update_checking_description">Looking for the latest LibrePods My release on GitHub.</string>
     <string name="personal_update_up_to_date">You’re up to date</string>
     <string name="personal_update_up_to_date_description">LibrePods My %1$s is the latest version.</string>
     <string name="personal_update_available">Update available</string>
-    <string name="personal_update_available_description">Personal build v%1$d is available. Continue in your browser to download it.</string>
+    <string name="personal_update_available_description">LibrePods My %1$s is available. Continue in your browser to download it.</string>
     <string name="personal_update_failed">Couldn’t continue the update</string>
     <string name="personal_update_check_button">Check</string>
     <string name="personal_update_browser_button">Open browser</string>

@@ -35,7 +35,13 @@ fun AppInfoCard(
         )
 
         StyledListItem(
-            name = stringResource(R.string.version_code),
+            name = stringResource(
+                if (BuildConfig.APPLICATION_ID.endsWith(".inje")) {
+                    R.string.personal_update_internal_build
+                } else {
+                    R.string.version_code
+                },
+            ),
             description = BuildConfig.VERSION_CODE.toString(),
         )
 
