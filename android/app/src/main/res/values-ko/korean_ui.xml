@@ -21,11 +21,13 @@
     <string name="ko_ui_display_over_other_apps_description">AirPods가 근처에 있거나 오디오가 AirPods로 전환될 때 팝업을 표시해요.</string>
     <string name="ko_ui_grant_all">모두 허용</string>
 
-    <string name="ko_ui_privacy_last_updated">마지막 업데이트: 2026년 10월 12일</string>
+    <string name="ko_ui_privacy_last_updated">마지막 업데이트: 2026년 10월 13일</string>
     <string name="ko_ui_privacy_overview">개요</string>
     <string name="ko_ui_privacy_overview_body">LibrePods는 광고, 분석, 추적 또는 프로파일링을 목적으로 개인정보를 수집, 저장, 판매하거나 공유하지 않아요. 이 앱에는 분석, 비정상 종료 보고, 원격 측정, 광고 SDK 또는 추적 서비스가 포함되어 있지 않아요.</string>
     <string name="ko_ui_privacy_local_data_body">블루투스 기능, AirPods 정보와 앱 설정은 기기에서 처리되며 개발자에게 전송되지 않아요.</string>
     <string name="ko_ui_privacy_software_updates">소프트웨어 업데이트</string>
+    <string name="ko_ui_privacy_mac_handoff">Mac 오디오 전환</string>
+    <string name="ko_ui_privacy_mac_handoff_body">Mac 전환은 직접 켜고 두 기기의 확인 코드가 같다고 승인한 뒤에만 작동해요. 근처 Bluetooth를 통해 등록한 Mac과 암호화된 재생 시작·연결 제어 메시지를 주고받아요. 오디오, 곡 제목, 앱 이름은 전송하지 않아요. 공개 연결 식별 정보와 연결 선택은 각 기기에 저장되며, 비공개 키는 Android Keystore 또는 macOS Keychain에 보관돼요. 재생 상태를 관찰하지만 오디오는 녹음하지 않아요.</string>
     <string name="ko_ui_privacy_software_updates_body">LibrePods My는 사용자가 업데이트 확인을 선택할 때만 GitHub에 연결해요. 다운로드를 선택하면 브라우저에서 개인 GitHub 저장소의 APK 다운로드를 열어요. 릴리스 정보와 APK를 받는 데 필요한 일반 네트워크 요청은 GitHub로 전송돼요. LibrePods My가 직접 APK를 내려받거나 설치하지 않으며, 로그, AirPods 정보 또는 앱 설정도 업로드하지 않아요.</string>
     <string name="ko_ui_privacy_third_party_services">외부 서비스</string>
     <string name="ko_ui_privacy_contact_methods_body">LibrePods에서는 이메일, Discord, GitHub Issues를 통해 개발자에게 연락할 수 있어요.</string>

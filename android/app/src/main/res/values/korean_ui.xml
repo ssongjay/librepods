@@ -23,11 +23,13 @@
     <string name="ko_ui_display_over_other_apps_description">Show popups when AirPods are nearby or audio switches to them.</string>
     <string name="ko_ui_grant_all">Grant all</string>
 
-    <string name="ko_ui_privacy_last_updated">Last updated: 12 October 2026</string>
+    <string name="ko_ui_privacy_last_updated">Last updated: 13 October 2026</string>
     <string name="ko_ui_privacy_overview">Overview</string>
     <string name="ko_ui_privacy_overview_body">LibrePods does not collect, store, sell, or share personal information for advertising, analytics, tracking, or profiling purposes. The app does not include analytics, crash reporting, telemetry, advertising SDKs, or tracking services.</string>
     <string name="ko_ui_privacy_local_data_body">Bluetooth features, AirPods information, and app settings are processed locally on your device. They are not sent to the developer.</string>
     <string name="ko_ui_privacy_software_updates">Software updates</string>
+    <string name="ko_ui_privacy_mac_handoff">Mac audio switching</string>
+    <string name="ko_ui_privacy_mac_handoff_body">Mac switching is off until you enable it and approve the matching confirmation code on both devices. Nearby Bluetooth exchanges encrypted playback-start and connection-control messages with your registered Mac. It does not transmit audio, track titles, or application names. Public connection identities and your pairing choices are stored locally; private keys stay in Android Keystore or macOS Keychain. Playback activity is observed without recording audio.</string>
     <string name="ko_ui_privacy_software_updates_body">LibrePods My connects to GitHub only when you choose to check for an update. When you choose Download, your browser opens the APK download on the personal GitHub repository. GitHub receives the ordinary network requests needed to serve release information and the APK. LibrePods My does not download or install APKs itself, or upload logs, AirPods information, or app settings.</string>
     <string name="ko_ui_privacy_third_party_services">Third-party services</string>
     <string name="ko_ui_privacy_contact_methods_body">LibrePods provides several ways to contact me, including email, Discord, and GitHub Issues.</string>

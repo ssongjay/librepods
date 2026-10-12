@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="handoff_runtime_pair_airpods">Pair and select your AirPods on this phone first.</string>
+    <string name="handoff_runtime_yield_requested">The phone playback pause and connection release were requested.</string>
+    <string name="handoff_runtime_audio_unavailable">Could not confirm the AirPods audio connection.</string>
+    <string name="handoff_runtime_phone_connected">AirPods audio is connected to this phone.</string>
+    <string name="handoff_runtime_pause_failed">The phone player did not pause. Pause it before starting playback on the Mac again.</string>
+    <string name="handoff_runtime_connection_policy">While Mac switching is on, new playback controls the connection. Wear, idle and call takeover settings are paused; their saved values return when switching is turned off. Local ear detection and playback controls remain available.</string>
+</resources>

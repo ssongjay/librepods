@@ -79,11 +79,13 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import me.kavishdevar.librepods.data.handoff.MacHandoffClient
 import me.kavishdevar.librepods.BuildConfig
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.presentation.components.AppInfoCard
 import me.kavishdevar.librepods.presentation.components.AppLanguageCard
 import me.kavishdevar.librepods.presentation.components.PersonalUpdateCard
+import me.kavishdevar.librepods.presentation.components.MacHandoffCard
 import me.kavishdevar.librepods.presentation.components.DeviceInfoCard
 import me.kavishdevar.librepods.presentation.components.StyledBottomSheet
 import me.kavishdevar.librepods.presentation.components.StyledButton
@@ -112,6 +114,8 @@ fun AppSettingsScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val state by viewModel.uiState.collectAsState()
+    val handoffState by MacHandoffClient.state.collectAsState()
+    val handoffActive = handoffState.enabled && handoffState.paired
 
     val backdrop = rememberLayerBackdrop()
 
@@ -139,6 +143,8 @@ fun AppSettingsScreen(
             AppLanguageCard()
             Spacer(modifier = Modifier.height(16.dp))
             PersonalUpdateCard()
+            Spacer(modifier = Modifier.height(16.dp))
+            MacHandoffCard()
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -288,6 +294,14 @@ fun AppSettingsScreen(
 //            }
 
             Spacer(modifier = Modifier.height(16.dp))
+            if (handoffActive) {
+                Text(
+                    stringResource(R.string.handoff_runtime_connection_policy),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+            }
             if (context.checkSelfPermission("android.permission.BLUETOOTH_PRIVILEGED") == PackageManager.PERMISSION_GRANTED) {
                 StyledToggle(
                     title = stringResource(R.string.ear_detection),
@@ -295,7 +309,7 @@ fun AppSettingsScreen(
                     description = stringResource(R.string.disconnect_when_not_wearing_description),
                     checked = state.disconnectWhenNotWearing,
                     onCheckedChange = viewModel::setDisconnectWhenNotWearing,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
             }
 
@@ -304,7 +318,8 @@ fun AppSettingsScreen(
                     label = stringResource(R.string.connect_when_worn),
                     description = stringResource(R.string.connect_when_worn_description),
                     checked = state.connectWhenWorn,
-                    onCheckedChange = viewModel::setConnectWhenWorn
+                    onCheckedChange = viewModel::setConnectWhenWorn,
+                    enabled = !handoffActive
                 )
                 StyledToggle(
                     label = stringResource(R.string.resume_playback_when_worn),
@@ -317,21 +332,21 @@ fun AppSettingsScreen(
                     description = stringResource(R.string.takeover_disconnected_desc),
                     checked = state.takeoverWhenDisconnected,
                     onCheckedChange = viewModel::setTakeoverWhenDisconnected,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
                 StyledToggle(
                     label = stringResource(R.string.takeover_idle),
                     description = stringResource(R.string.takeover_idle_desc),
                     checked = state.takeoverWhenIdle,
                     onCheckedChange = viewModel::setTakeoverWhenIdle,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
                 StyledToggle(
                     label = stringResource(R.string.takeover_music),
                     description = stringResource(R.string.takeover_music_desc),
                     checked = state.takeoverWhenMusic,
                     onCheckedChange = viewModel::setTakeoverWhenMusic,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
 
                 StyledToggle(
@@ -339,7 +354,7 @@ fun AppSettingsScreen(
                     description = stringResource(R.string.takeover_call_desc),
                     checked = state.takeoverWhenCall,
                     onCheckedChange = viewModel::setTakeoverWhenCall,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
             }
 
@@ -351,14 +366,14 @@ fun AppSettingsScreen(
                     description = stringResource(R.string.takeover_ringing_call_desc),
                     checked = state.takeoverWhenRingingCall,
                     onCheckedChange = viewModel::setTakeoverWhenRingingCall,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
                 StyledToggle(
                     label = stringResource(R.string.takeover_media_start),
                     description = stringResource(R.string.takeover_media_start_desc),
                     checked = state.takeoverWhenMediaStart,
                     onCheckedChange = viewModel::setTakeoverWhenMediaStart,
-                    enabled = state.isPremium
+                    enabled = state.isPremium && !handoffActive
                 )
             }
 

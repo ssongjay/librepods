@@ -126,3 +126,34 @@ to install an APK that is blocked. A continuing block needs vendor review.
 - Due to recent AirPods' firmware upgrades, you must enable `Off listening mode` to switch to `Off`. This is because in this mode, loud sounds are not reduced.
 
 - When renaming your AirPods through the app, you'll need to re-pair them with your phone for the name change to take effect. This is a limitation of how Bluetooth device naming works on Android.
+
+
+### Mac handoff (LibrePods My 0.2.0)
+
+The companion lives in [../macos](../macos/README.md). Pair the same AirPods in
+both system Bluetooth settings. On Android 17, approve **AirPods connection control**
+in LibrePods My settings; this uses the native Companion Device Manager picker
+filtered to your selected bonded AirPods. No new Android permission or dependency
+is added. The case may need to be open during the system discovery step.
+
+Enable the Mac handoff settings, discover the nearby Mac, compare the confirmation
+code on both devices and approve on both. The first Mac version is 0.1.0; Android
+is 0.2.0/internal70. Afterwards a new media playback start requests that device,
+and playback stop never restores the previous device. The app does not record or
+transmit audio, track titles or application names.
+
+The feature is off until explicitly enabled and paired. While active, legacy wear
+and music/call automatic takeover cannot override handoff. Original local ear and
+conversation resume can run only for current PHONE ownership; their known player
+starts are excluded from handoff decisions. Manual play/reconnect still requests
+PHONE ownership. Turning handoff off preserves the original features and settings.
+
+Phone pause is confirmed before a Mac claim, and actual A2DP/CoreAudio output is
+checked before success. Some players may ignore media pause or keep audio engines
+running; very short/rapid activity can be missed or misclassified. Mac cannot pause
+all third-party players through the chosen public APIs, so an old Mac player may
+continue through its speakers. The UI shows the latest **requested** device and
+actual transition results separately. Builds do not prove real AirPods switching.
+
+See [handoff-protocol.md](../docs/handoff-protocol.md) for bounded framing,
+identity pinning, encryption, session/revision fencing and integration boundaries.

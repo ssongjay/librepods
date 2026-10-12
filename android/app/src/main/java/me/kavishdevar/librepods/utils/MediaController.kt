@@ -31,6 +31,7 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.annotation.RequiresApi
 import me.kavishdevar.librepods.services.ServiceManager
+import me.kavishdevar.librepods.data.handoff.MacHandoffClient
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 object MediaController {
@@ -65,6 +66,45 @@ object MediaController {
 
     private var lastPlayWithReplay: Boolean = false
     private var lastPlayTime: Long = 0L
+
+    @Volatile
+    var handoffPlaybackListener: ((List<AudioPlaybackConfiguration>, Set<AudioPlaybackConfiguration>) -> Unit)? = null
+
+    @Volatile private var pausedMediaPlayers = emptySet<AudioPlaybackConfiguration>()
+    @Volatile private var automaticallyResumedPlayers = emptySet<AudioPlaybackConfiguration>()
+    @Volatile private var automaticResumeExpiresAt = 0L
+    private var automaticResumeAttempt = 0L
+
+    @Synchronized
+    fun clearHandoffAutomaticResume() {
+        automaticResumeAttempt++
+        automaticResumeExpiresAt = 0L
+        automaticallyResumedPlayers = emptySet()
+    }
+
+    fun playbackSnapshot(): List<AudioPlaybackConfiguration> =
+        if (this::audioManager.isInitialized) audioManager.activePlaybackConfigurations else emptyList()
+
+    @Synchronized
+    fun pauseForHandoff() {
+        lastPlayWithReplay = false
+        lastSelfActionAt = SystemClock.uptimeMillis()
+        handler.removeCallbacks(clearPausedForOtherDeviceRunnable)
+        pausedForOtherDevice = false
+        sendPause(force = true)
+        iPausedTheMedia = false
+        userPlayedTheMedia = false
+        pausedWhileTakingOver = false
+        pausedMediaPlayers = emptySet()
+        automaticallyResumedPlayers = emptySet()
+        clearHandoffAutomaticResume()
+    }
+
+    fun hasActiveMedia(): Boolean {
+        val configurations = playbackSnapshot()
+        return configurations.any { it.audioAttributes.usage == android.media.AudioAttributes.USAGE_MEDIA } ||
+            (configurations.isEmpty() && this::audioManager.isInitialized && audioManager.isMusicActive)
+    }
 
     fun initialize(audioManager: AudioManager, sharedPreferences: SharedPreferences) {
         if (this::audioManager.isInitialized) {
@@ -102,6 +142,18 @@ object MediaController {
             super.onPlaybackConfigChanged(configs)
             val now = SystemClock.uptimeMillis()
             val isActive = audioManager.isMusicActive
+            if (MacHandoffClient.enabled && MacHandoffClient.paired) {
+                val configurations = configs?.toList() ?: emptyList()
+                if (now >= automaticResumeExpiresAt) automaticallyResumedPlayers = emptySet()
+                val resumed = automaticallyResumedPlayers.intersect(configurations.toSet())
+                automaticallyResumedPlayers = automaticallyResumedPlayers - resumed
+                handoffPlaybackListener?.invoke(
+                    configurations,
+                    resumed,
+                )
+                lastKnownIsMusicActive = isActive
+                return
+            }
             Log.d("MediaController", "Playback config changed, iPausedTheMedia: $iPausedTheMedia, isActive: $isActive, pausedForOtherDevice: $pausedForOtherDevice, lastKnownIsMusicActive: $lastKnownIsMusicActive")
 
             if (!isActive && lastPlayWithReplay && now - lastPlayTime < 2500L) {
@@ -214,7 +266,11 @@ object MediaController {
             sendPause()
         } else {
             Log.d("MediaController", "Sending play because music is not active")
-            sendPlay()
+            if (MacHandoffClient.enabled && MacHandoffClient.paired) {
+                sendPlay(force = true, userInitiated = true)
+            } else {
+                sendPlay()
+            }
         }
     }
 
@@ -258,6 +314,10 @@ object MediaController {
     fun sendPause(force: Boolean = false) {
         Log.d("MediaController", "Sending pause with iPausedTheMedia: $iPausedTheMedia, userPlayedTheMedia: $userPlayedTheMedia, isMusicActive: ${audioManager.isMusicActive}, force: $force")
         if ((audioManager.isMusicActive) && (!userPlayedTheMedia || force)) {
+            pausedMediaPlayers = playbackSnapshot().filter {
+                it.audioAttributes.usage == android.media.AudioAttributes.USAGE_MEDIA
+            }.toSet()
+            lastSelfActionAt = SystemClock.uptimeMillis()
             iPausedTheMedia = if (force) audioManager.isMusicActive else true
             userPlayedTheMedia = false
             audioManager.dispatchMediaKeyEvent(
@@ -277,13 +337,34 @@ object MediaController {
     }
 
     @Synchronized
-    fun sendPlay(replayWhenPaused: Boolean = false, force: Boolean = false) {
+    fun sendPlay(
+        replayWhenPaused: Boolean = false,
+        force: Boolean = false,
+        userInitiated: Boolean = false,
+        allowDuringHandoff: Boolean = true,
+    ) {
+        if (MacHandoffClient.enabled && MacHandoffClient.paired &&
+            (!allowDuringHandoff || (!userInitiated &&
+                ServiceManager.getService()?.isPhoneHandoffAudioHolder() != true))
+        ) return
         Log.d("MediaController", "Sending play with iPausedTheMedia: $iPausedTheMedia, replayWhenPaused: $replayWhenPaused, force: $force")
         if (replayWhenPaused) {
             lastPlayWithReplay = true
             lastPlayTime = SystemClock.uptimeMillis()
         }
         if (iPausedTheMedia || force) { // very creative, ik. thanks.
+            if (MacHandoffClient.enabled && MacHandoffClient.paired) {
+                clearHandoffAutomaticResume()
+                if (!userInitiated) {
+                    automaticallyResumedPlayers = pausedMediaPlayers
+                    automaticResumeExpiresAt = SystemClock.uptimeMillis() + 1_500L
+                    val attempt = automaticResumeAttempt
+                    handler.postDelayed({
+                        if (automaticResumeAttempt == attempt) clearHandoffAutomaticResume()
+                    }, 1_500L)
+                }
+            }
+            lastSelfActionAt = SystemClock.uptimeMillis()
             Log.d("MediaController", "Sending play and setting userPlayedTheMedia to false")
             userPlayedTheMedia = false
             audioManager.dispatchMediaKeyEvent(

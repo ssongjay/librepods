@@ -72,6 +72,16 @@ fun PrivacyPolicyPage(
             )
 
             Text(
+                text = stringResource(R.string.ko_ui_privacy_mac_handoff),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Text(
+                text = stringResource(R.string.ko_ui_privacy_mac_handoff_body),
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
                 text = stringResource(R.string.ko_ui_privacy_third_party_services),
                 style = MaterialTheme.typography.titleLarge
             )

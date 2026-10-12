@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="handoff_runtime_pair_airpods">먼저 이 폰에서 AirPods를 페어링하고 선택해주세요.</string>
+    <string name="handoff_runtime_yield_requested">폰 재생 중지와 연결 해제를 요청했어요.</string>
+    <string name="handoff_runtime_audio_unavailable">AirPods 오디오 연결을 확인하지 못했어요.</string>
+    <string name="handoff_runtime_phone_connected">AirPods 오디오가 이 폰에 연결됐어요.</string>
+    <string name="handoff_runtime_pause_failed">폰 재생이 멈추지 않았어요. 먼저 멈춘 뒤 Mac에서 다시 재생해주세요.</string>
+    <string name="handoff_runtime_connection_policy">Mac 자동 전환 중에는 새로 재생한 기기로 연결을 바꿔요. 착용·대기·통화에 따른 연결 설정은 잠시 쉬며, 자동 전환을 끄면 저장한 설정대로 돌아가요. 착용 감지와 재생 제어는 계속 사용할 수 있어요.</string>
+</resources>
