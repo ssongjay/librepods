@@ -82,6 +82,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import me.kavishdevar.librepods.BuildConfig
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.presentation.components.AppInfoCard
+import me.kavishdevar.librepods.presentation.components.PersonalUpdateCard
 import me.kavishdevar.librepods.presentation.components.DeviceInfoCard
 import me.kavishdevar.librepods.presentation.components.StyledBottomSheet
 import me.kavishdevar.librepods.presentation.components.StyledButton
@@ -132,6 +133,11 @@ fun AppSettingsScreen(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(topPadding))
+
+        if (BuildConfig.APPLICATION_ID.endsWith(".inje")) {
+            PersonalUpdateCard()
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         val isDarkTheme = isSystemInDarkTheme()
 

@@ -49,7 +49,7 @@ android {
     defaultConfig {
         applicationId = "me.kavishdevar.librepods"
         targetSdk = 37
-        versionCode = 65
+        versionCode = 66
         versionName = appVersionName
     }
     buildTypes {
@@ -73,10 +73,11 @@ android {
         }
         debug {
             applicationIdSuffix = ".inje"
+            isDebuggable = false
             if (releaseSigningAvailable) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            versionNameSuffix = "-inje-wear2"
+            versionNameSuffix = "-my3"
             defaultConfig {
                 minSdk = 33
             }

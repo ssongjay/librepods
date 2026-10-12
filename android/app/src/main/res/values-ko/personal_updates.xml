@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="personal_update_section_title">LibrePods My 업데이트</string>
+    <string name="personal_update_manual_description">업데이트 확인 버튼을 누를 때만 GitHub에 연결해요. 설치는 항상 직접 확인해야 해요.</string>
+    <string name="personal_update_current_version">현재 버전</string>
+    <string name="personal_update_idle_description">LibrePods My %1$s</string>
+    <string name="personal_update_checking">업데이트 확인 중…</string>
+    <string name="personal_update_checking_description">GitHub에서 검증 가능한 최신 개인 빌드를 찾고 있어요.</string>
+    <string name="personal_update_up_to_date">최신 버전이에요</string>
+    <string name="personal_update_up_to_date_description">LibrePods My %1$s이 최신 버전이에요.</string>
+    <string name="personal_update_available">업데이트가 있어요</string>
+    <string name="personal_update_available_description">개인 빌드 v%1$d를 받을 수 있어요.</string>
+    <string name="personal_update_downloading">업데이트 받는 중…</string>
+    <string name="personal_update_downloading_description">%1$d%% 받았어요</string>
+    <string name="personal_update_verifying">업데이트 확인 중…</string>
+    <string name="personal_update_verifying_description">파일, 앱 식별자, v%1$d 버전과 서명을 확인하고 있어요.</string>
+    <string name="personal_update_ready">업데이트 준비 완료</string>
+    <string name="personal_update_ready_description">개인 빌드 v%1$d 검증이 끝났어요. 설치할 수 있어요.</string>
+    <string name="personal_update_permission_required">설치 권한이 필요해요</string>
+    <string name="personal_update_permission_description">LibrePods My의 앱 설치를 허용한 뒤 돌아와서 설치를 다시 눌러주세요.</string>
+    <string name="personal_update_failed">업데이트하지 못했어요</string>
+    <string name="personal_update_check_button">확인</string>
+    <string name="personal_update_download_button">다운로드</string>
+    <string name="personal_update_install_button">설치</string>
+    <string name="personal_update_permission_button">설치</string>
+    <string name="personal_update_retry_check_button">다시 확인</string>
+    <string name="personal_update_retry_download_button">다시 받기</string>
+    <string name="personal_update_retry_install_button">설치 다시 시도</string>
+    <string name="personal_update_error_no_release">아직 공개된 LibrePods My 릴리스가 없어요.</string>
+    <string name="personal_update_error_rate_limited">GitHub에서 업데이트 확인을 잠시 제한했어요. 나중에 다시 시도해주세요.</string>
+    <string name="personal_update_error_offline">GitHub에 연결하지 못했어요. 인터넷 연결을 확인해주세요.</string>
+    <string name="personal_update_error_invalid_release">최신 릴리스가 LibrePods My 업데이트 형식과 맞지 않아요.</string>
+    <string name="personal_update_error_download">업데이트 파일을 완전히 받지 못했어요.</string>
+    <string name="personal_update_error_verification">받은 업데이트가 안전 확인을 통과하지 못해 삭제했어요.</string>
+    <string name="personal_update_error_installer">Android에서 업데이트 설치 화면을 열지 못했어요.</string>
+</resources>

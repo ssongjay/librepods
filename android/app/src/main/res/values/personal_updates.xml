@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This personal fork supplies Korean strings and intentionally uses English as the fallback elsewhere. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="personal_update_section_title">LibrePods My updates</string>
+    <string name="personal_update_manual_description">Updates are checked only when you tap the button. Installation always requires your confirmation.</string>
+    <string name="personal_update_current_version">Current version</string>
+    <string name="personal_update_idle_description">LibrePods My %1$s</string>
+    <string name="personal_update_checking">Checking for an update…</string>
+    <string name="personal_update_checking_description">Looking for the latest verified personal build on GitHub.</string>
+    <string name="personal_update_up_to_date">You’re up to date</string>
+    <string name="personal_update_up_to_date_description">LibrePods My %1$s is the latest version.</string>
+    <string name="personal_update_available">Update available</string>
+    <string name="personal_update_available_description">Personal build v%1$d is ready to download.</string>
+    <string name="personal_update_downloading">Downloading update…</string>
+    <string name="personal_update_downloading_description">%1$d%% downloaded</string>
+    <string name="personal_update_verifying">Verifying update…</string>
+    <string name="personal_update_verifying_description">Checking the file, app identity, version v%1$d, and signing certificate.</string>
+    <string name="personal_update_ready">Update ready</string>
+    <string name="personal_update_ready_description">Personal build v%1$d was verified and is ready to install.</string>
+    <string name="personal_update_permission_required">Installation permission required</string>
+    <string name="personal_update_permission_description">Allow LibrePods My to install apps, then return here and tap Install update again.</string>
+    <string name="personal_update_failed">Couldn’t update</string>
+    <string name="personal_update_check_button">Check</string>
+    <string name="personal_update_download_button">Download</string>
+    <string name="personal_update_install_button">Install</string>
+    <string name="personal_update_permission_button">Install</string>
+    <string name="personal_update_retry_check_button">Check again</string>
+    <string name="personal_update_retry_download_button">Retry download</string>
+    <string name="personal_update_retry_install_button">Try install again</string>
+    <string name="personal_update_error_no_release">No LibrePods My release has been published yet.</string>
+    <string name="personal_update_error_rate_limited">GitHub is temporarily limiting update checks. Try again later.</string>
+    <string name="personal_update_error_offline">Couldn’t reach GitHub. Check your connection and try again.</string>
+    <string name="personal_update_error_invalid_release">The latest release doesn’t match the LibrePods My update format.</string>
+    <string name="personal_update_error_download">The update couldn’t be downloaded completely.</string>
+    <string name="personal_update_error_verification">The downloaded update failed its safety checks and was removed.</string>
+    <string name="personal_update_error_installer">Android couldn’t open the update installer.</string>
+</resources>

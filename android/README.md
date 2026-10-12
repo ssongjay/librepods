@@ -60,6 +60,28 @@ https://github.com/user-attachments/assets/43911243-0576-4093-8c55-89c1db5ea533
 - Ensure there is no root-hiding module preventing the hook from loading on the Bluetooth app.
 - Restart your phone after confirming the scope.
 
+### LibrePods My personal updates
+
+The personal build keeps the package `me.kavishdevar.librepods.inje` so it can
+update the existing Inje APK without removing app settings. Its display name is
+LibrePods My. Build it with `assembleFossDebug`; the distributed APK is explicitly
+non-debuggable even though this build task retains its upstream name.
+
+Keep the existing signing keystore when building later versions. A new signing
+key cannot update an installed personal build. Never commit the keystore or its
+credentials. Increment `versionCode` for each published update.
+
+Publish to `ssongjay/librepods` as a non-prerelease GitHub release with the tag
+`my-v<versionCode>` and the exact asset name `LibrePods-My.apk`. Point the release
+at the commit that produced the APK. Verify its signature, package/version, and
+GitHub asset SHA-256 before publishing. The app checks that release only when the
+user presses the update button in app settings, and Android confirms installation.
+
+Run `assembleFossDebug lintFossDebug`, `verification/run_personal_update_checks.py`,
+and `verification/run_wear_checks.py` before publication. Set `JAVA_HOME` and
+`GRADLE_USER_HOME` for the standalone checks. The update checks use the existing
+Kotlin compiler cache and introduce no new app dependencies.
+
 ### A few notes
 
 - Due to recent AirPods' firmware upgrades, you must enable `Off listening mode` to switch to `Off`. This is because in this mode, loud sounds are not reduced.
