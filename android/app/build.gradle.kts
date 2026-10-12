@@ -49,7 +49,7 @@ android {
     defaultConfig {
         applicationId = "me.kavishdevar.librepods"
         targetSdk = 37
-        versionCode = 67
+        versionCode = 68
         versionName = appVersionName
     }
     buildTypes {
@@ -77,7 +77,7 @@ android {
             if (releaseSigningAvailable) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            versionNameSuffix = "-my4-ko"
+            versionNameSuffix = "-my5-permissions"
             defaultConfig {
                 minSdk = 33
             }

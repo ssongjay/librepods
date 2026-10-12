@@ -75,12 +75,44 @@ Publish to `ssongjay/librepods` as a non-prerelease GitHub release with the tag
 `my-v<versionCode>` and the exact asset name `LibrePods-My.apk`. Point the release
 at the commit that produced the APK. Verify its signature, package/version, and
 GitHub asset SHA-256 before publishing. The app checks that release only when the
-user presses the update button in app settings, and Android confirms installation.
+user presses the update button in app settings. Download opens the exact APK URL
+in the browser; the user opens the downloaded APK and Android confirms installation.
+The app does not request permission to install packages or verify the downloaded
+file itself. Package updates still require a matching installed signing certificate,
+which Android enforces.
 
 Run `assembleFossDebug lintFossDebug`, `verification/run_personal_update_checks.py`,
 and `verification/run_wear_checks.py` before publication. Set `JAVA_HOME` and
 `GRADLE_USER_HOME` for the standalone checks. The update checks use the existing
 Kotlin compiler cache and introduce no new app dependencies.
+
+### Personal build permission audit (v68)
+
+The personal `fossDebug` APK removes five permissions from v67:
+
+- `REQUEST_INSTALL_PACKAGES`: replaced with an explicit browser download action.
+- `BLUETOOTH_ADVERTISE`: no BLE advertiser is implemented.
+- `BLUETOOTH` and `BLUETOOTH_ADMIN`: the APK requires Android 13+, where the
+  implemented Bluetooth features use `BLUETOOTH_CONNECT` and `BLUETOOTH_SCAN`.
+- `com.android.vending.BILLING`: the FOSS provider opens a GitHub Sponsors link.
+
+Bluetooth scan/connect, foreground monitoring, notifications, restart after boot,
+audio settings, and Internet for user-initiated update checks remain implemented.
+Phone state and answering permissions remain optional for call detection and head
+gestures. Drawing over other apps remains optional for the connection popup and
+island UI. The app requests only CONNECT and SCAN in its Bluetooth onboarding.
+
+The system-only `BLUETOOTH_PRIVILEGED`, `MODIFY_PHONE_STATE`, `LOCAL_MAC_ADDRESS`,
+and `INTERACT_ACROSS_USERS` declarations remain because they support original
+privileged/root-module features. Ordinary installs cannot receive them, and the
+existing permission checks and fallback paths remain unchanged.
+
+The removals use variant manifest overlays. The Play build retains billing
+support. The personal package ID and signing key must remain unchanged.
+
+This reduces unused capabilities; it is not a claim that the APK is malware-free
+or that Samsung's security classification will clear. Do not disable protection
+to install an APK that is blocked. A continuing block needs vendor review.
 
 ### A few notes
 

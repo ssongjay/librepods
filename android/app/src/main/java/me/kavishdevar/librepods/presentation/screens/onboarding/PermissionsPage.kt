@@ -94,10 +94,7 @@ fun PermissionsPage(
     val bluetoothPermissionsState = rememberMultiplePermissionsState(
         listOf(
             "android.permission.BLUETOOTH_CONNECT",
-            "android.permission.BLUETOOTH_SCAN",
-            "android.permission.BLUETOOTH",
-            "android.permission.BLUETOOTH_ADMIN",
-            "android.permission.BLUETOOTH_ADVERTISE"
+            "android.permission.BLUETOOTH_SCAN"
         )
     ) {
         if (grantingAll) {

@@ -12,25 +12,15 @@ package me.kavishdevar.librepods.data.updates
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
 import android.net.Uri
-import android.provider.Settings
-import androidx.core.content.FileProvider
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
 import javax.net.ssl.HttpsURLConnection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,9 +35,7 @@ import org.json.JSONObject
 internal data class PersonalRelease(
     val versionCode: Long,
     val tagName: String,
-    val digest: ByteArray,
-    val downloadUrl: URL,
-    val assetSize: Long,
+    val downloadUrl: String,
 )
 
 internal enum class PersonalUpdateError {
@@ -55,15 +43,12 @@ internal enum class PersonalUpdateError {
     RATE_LIMITED,
     OFFLINE,
     INVALID_RELEASE,
-    DOWNLOAD_FAILED,
-    VERIFICATION_FAILED,
-    INSTALLER_UNAVAILABLE,
+    BROWSER_UNAVAILABLE,
 }
 
 internal enum class PersonalUpdateRetry {
     CHECK,
-    DOWNLOAD,
-    INSTALL,
+    OPEN_BROWSER,
 }
 
 internal sealed interface PersonalUpdateState {
@@ -71,10 +56,6 @@ internal sealed interface PersonalUpdateState {
     data object Checking : PersonalUpdateState
     data object UpToDate : PersonalUpdateState
     data class Available(val versionCode: Long) : PersonalUpdateState
-    data class Downloading(val versionCode: Long, val percent: Int) : PersonalUpdateState
-    data class Verifying(val versionCode: Long) : PersonalUpdateState
-    data class Ready(val versionCode: Long) : PersonalUpdateState
-    data class PermissionRequired(val versionCode: Long) : PersonalUpdateState
     data class Error(
         val reason: PersonalUpdateError,
         val retry: PersonalUpdateRetry,
@@ -82,44 +63,22 @@ internal sealed interface PersonalUpdateState {
 }
 
 /**
- * A deliberately small updater for the personal LibrePods build.
+ * Checks the personal GitHub release metadata after an explicit user action.
  *
- * It performs network work only after an explicit user action. A release is accepted only when
- * its tag, asset name, digest, package name, version code, and signing certificate all match the
- * personal-build contract.
+ * APK downloading and installation stay with the browser and Android package installer. The app
+ * only opens the exact canonical asset URL accepted by [PersonalUpdatePolicy].
  */
 internal class PersonalUpdater(context: Context) {
     private val appContext = context.applicationContext
-    private val packageManager = appContext.packageManager
     private val operationMutex = Mutex()
-    private val updatesDirectory = File(appContext.filesDir, UPDATES_DIRECTORY)
-    private val downloadedApk = File(updatesDirectory, APK_FILE_NAME)
-    private val temporaryApk = File(updatesDirectory, TEMP_APK_FILE_NAME)
-    private val pendingRecord = File(updatesDirectory, PENDING_RECORD_FILE_NAME)
 
     private val _state = MutableStateFlow<PersonalUpdateState>(PersonalUpdateState.Idle)
     val state: StateFlow<PersonalUpdateState> = _state.asStateFlow()
 
     private var availableRelease: PersonalRelease? = null
 
-    suspend fun restorePendingUpdate() = operationMutex.withLock {
-        if (_state.value != PersonalUpdateState.Idle) return@withLock
-
-        withContext(Dispatchers.IO) {
-            temporaryApk.delete()
-            val hadPendingFiles = pendingRecord.exists() || downloadedApk.exists()
-            val release = readPendingRecord()
-            if (release == null) {
-                if (hadPendingFiles) clearPendingFiles()
-                return@withContext
-            }
-            if (verifyApk(downloadedApk, release)) {
-                availableRelease = release
-                _state.value = PersonalUpdateState.Ready(release.versionCode)
-            } else {
-                clearPendingFiles()
-            }
-        }
+    init {
+        cleanLegacyUpdaterFiles()
     }
 
     suspend fun checkForUpdate() = operationMutex.withLock {
@@ -131,12 +90,12 @@ internal class PersonalUpdater(context: Context) {
         ) {
             return@withLock
         }
+
         _state.value = PersonalUpdateState.Checking
         try {
             val release = withContext(Dispatchers.IO) { fetchLatestRelease() }
             if (release == null) {
                 availableRelease = null
-                withContext(Dispatchers.IO) { clearPendingFiles() }
                 _state.value = PersonalUpdateState.UpToDate
             } else {
                 availableRelease = release
@@ -155,15 +114,25 @@ internal class PersonalUpdater(context: Context) {
         }
     }
 
-    suspend fun downloadUpdate() = operationMutex.withLock {
+    suspend fun openReleaseInBrowser() = operationMutex.withLock {
         val currentState = _state.value
         if (currentState !is PersonalUpdateState.Available &&
             (currentState !is PersonalUpdateState.Error ||
-                currentState.retry != PersonalUpdateRetry.DOWNLOAD)
+                currentState.retry != PersonalUpdateRetry.OPEN_BROWSER)
         ) {
             return@withLock
         }
-        val release = availableRelease ?: run {
+
+        val release = availableRelease
+        if (release == null ||
+            !PersonalUpdatePolicy.isStrictlyNewer(
+                release.tagName,
+                BuildConfig.VERSION_CODE.toLong(),
+            ) ||
+            !PersonalUpdatePolicy.isAllowedAssetUrl(release.downloadUrl, release.tagName) ||
+            release.downloadUrl != PersonalUpdatePolicy.expectedAssetUrl(release.tagName)
+        ) {
+            availableRelease = null
             _state.value = PersonalUpdateState.Error(
                 PersonalUpdateError.INVALID_RELEASE,
                 PersonalUpdateRetry.CHECK,
@@ -171,88 +140,17 @@ internal class PersonalUpdater(context: Context) {
             return@withLock
         }
 
+        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(release.downloadUrl)).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         try {
-            withContext(Dispatchers.IO) { downloadAndVerify(release) }
-            _state.value = PersonalUpdateState.Ready(release.versionCode)
-        } catch (cancelled: CancellationException) {
-            clearPendingFiles()
+            appContext.startActivity(browserIntent)
             _state.value = PersonalUpdateState.Available(release.versionCode)
-            throw cancelled
-        } catch (failure: UpdateFailure) {
-            clearPendingFiles()
-            _state.value = PersonalUpdateState.Error(failure.reason, PersonalUpdateRetry.DOWNLOAD)
-        } catch (_: IOException) {
-            clearPendingFiles()
-            _state.value = PersonalUpdateState.Error(
-                PersonalUpdateError.DOWNLOAD_FAILED,
-                PersonalUpdateRetry.DOWNLOAD,
-            )
-        }
-    }
-
-    suspend fun installUpdate() = operationMutex.withLock {
-        val currentState = _state.value
-        if (currentState !is PersonalUpdateState.Ready &&
-            currentState !is PersonalUpdateState.PermissionRequired &&
-            (currentState !is PersonalUpdateState.Error ||
-                currentState.retry != PersonalUpdateRetry.INSTALL)
-        ) {
-            return@withLock
-        }
-        val release = availableRelease ?: withContext(Dispatchers.IO) { readPendingRecord() }
-        if (release == null) {
-            _state.value = PersonalUpdateState.Error(
-                PersonalUpdateError.VERIFICATION_FAILED,
-                PersonalUpdateRetry.CHECK,
-            )
-            return@withLock
-        }
-
-        _state.value = PersonalUpdateState.Verifying(release.versionCode)
-        val verified = withContext(Dispatchers.IO) { verifyApk(downloadedApk, release) }
-        if (!verified) {
-            withContext(Dispatchers.IO) { clearPendingFiles() }
-            _state.value = PersonalUpdateState.Error(
-                PersonalUpdateError.VERIFICATION_FAILED,
-                PersonalUpdateRetry.CHECK,
-            )
-            return@withLock
-        }
-
-        availableRelease = release
-        if (!packageManager.canRequestPackageInstalls()) {
-            val permissionIntent = Intent(
-                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                Uri.parse("package:${appContext.packageName}"),
-            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            try {
-                appContext.startActivity(permissionIntent)
-                _state.value = PersonalUpdateState.PermissionRequired(release.versionCode)
-            } catch (_: RuntimeException) {
-                _state.value = PersonalUpdateState.Error(
-                    PersonalUpdateError.INSTALLER_UNAVAILABLE,
-                    PersonalUpdateRetry.INSTALL,
-                )
-            }
-            return@withLock
-        }
-
-        try {
-            val apkUri = FileProvider.getUriForFile(
-                appContext,
-                "${appContext.packageName}.provider",
-                downloadedApk,
-            )
-            val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(apkUri, APK_MIME_TYPE)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            appContext.startActivity(installIntent)
-            _state.value = PersonalUpdateState.Ready(release.versionCode)
         } catch (_: RuntimeException) {
             _state.value = PersonalUpdateState.Error(
-                PersonalUpdateError.INSTALLER_UNAVAILABLE,
-                PersonalUpdateRetry.INSTALL,
+                PersonalUpdateError.BROWSER_UNAVAILABLE,
+                PersonalUpdateRetry.OPEN_BROWSER,
             )
         }
     }
@@ -260,8 +158,7 @@ internal class PersonalUpdater(context: Context) {
     suspend fun retry() {
         when ((state.value as? PersonalUpdateState.Error)?.retry) {
             PersonalUpdateRetry.CHECK -> checkForUpdate()
-            PersonalUpdateRetry.DOWNLOAD -> downloadUpdate()
-            PersonalUpdateRetry.INSTALL -> installUpdate()
+            PersonalUpdateRetry.OPEN_BROWSER -> openReleaseInBrowser()
             null -> Unit
         }
     }
@@ -272,9 +169,10 @@ internal class PersonalUpdater(context: Context) {
             return connection.runCancellable {
                 when (connection.responseCode) {
                     HttpURLConnection.HTTP_OK -> parseRelease(
-                        connection.inputStream.readBytesBounded(METADATA_LIMIT_BYTES),
+                        connection.inputStream.readBytesBounded(
+                            PersonalUpdatePolicy.METADATA_LIMIT_BYTES,
+                        ),
                     )
-
                     HttpURLConnection.HTTP_NOT_FOUND -> throw UpdateFailure(
                         PersonalUpdateError.NO_RELEASE,
                     )
@@ -315,22 +213,17 @@ internal class PersonalUpdater(context: Context) {
             }
 
             val asset = matchingAssets.single()
-            val size = asset.getLong("size")
             val assetName = asset.getString("name")
             val downloadUrl = asset.getString("browser_download_url")
-            if (!PersonalUpdatePolicy.isExpectedAsset(tagName, assetName, downloadUrl, size)) {
-                throw UpdateFailure(PersonalUpdateError.INVALID_RELEASE)
-            }
-            val digestHex = PersonalUpdatePolicy.digestHex(asset.getString("digest"))
-                ?: throw UpdateFailure(PersonalUpdateError.INVALID_RELEASE)
-            val digest = digestHex.hexToBytes()
-            val expectedUrl = expectedAssetUrl(tagName)
-            val actualUrl = URL(downloadUrl)
-            if (actualUrl.toExternalForm() != expectedUrl.toExternalForm()) {
+            val size = asset.getLong("size")
+            if (!PersonalUpdatePolicy.isExpectedAsset(tagName, assetName, downloadUrl, size) ||
+                !PersonalUpdatePolicy.isAllowedAssetUrl(downloadUrl, tagName) ||
+                PersonalUpdatePolicy.digestHex(asset.getString("digest")) == null
+            ) {
                 throw UpdateFailure(PersonalUpdateError.INVALID_RELEASE)
             }
 
-            return PersonalRelease(versionCode, tagName, digest, actualUrl, size)
+            return PersonalRelease(versionCode, tagName, downloadUrl)
         } catch (failure: UpdateFailure) {
             throw failure
         } catch (_: JSONException) {
@@ -339,122 +232,6 @@ internal class PersonalUpdater(context: Context) {
             throw UpdateFailure(PersonalUpdateError.INVALID_RELEASE)
         }
     }
-
-    private suspend fun downloadAndVerify(release: PersonalRelease) {
-        updatesDirectory.mkdirs()
-        temporaryApk.delete()
-
-        val connection = openAssetConnection(release)
-        try {
-            val coroutineContext = currentCoroutineContext()
-            connection.runCancellable {
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                    throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-                }
-                val contentLength = connection.contentLengthLong
-                if (contentLength > APK_LIMIT_BYTES ||
-                    (contentLength >= 0 && contentLength != release.assetSize)
-                ) {
-                    throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-                }
-
-                val messageDigest = MessageDigest.getInstance("SHA-256")
-                var totalBytes = 0L
-                connection.inputStream.buffered().use { input ->
-                    FileOutputStream(temporaryApk).buffered().use { output ->
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                        while (true) {
-                            coroutineContext.ensureActive()
-                            val count = input.read(buffer)
-                            if (count < 0) break
-                            totalBytes += count
-                            if (totalBytes > APK_LIMIT_BYTES || totalBytes > release.assetSize) {
-                                throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-                            }
-                            messageDigest.update(buffer, 0, count)
-                            output.write(buffer, 0, count)
-                            val percent = ((totalBytes * 100L) / release.assetSize)
-                                .toInt()
-                                .coerceIn(0, 100)
-                            _state.value = PersonalUpdateState.Downloading(
-                                release.versionCode,
-                                percent,
-                            )
-                        }
-                    }
-                }
-
-                if (totalBytes != release.assetSize ||
-                    !MessageDigest.isEqual(messageDigest.digest(), release.digest)
-                ) {
-                    throw UpdateFailure(PersonalUpdateError.VERIFICATION_FAILED)
-                }
-                _state.value = PersonalUpdateState.Verifying(release.versionCode)
-                if (!verifyApkMetadata(temporaryApk, release.versionCode)) {
-                    throw UpdateFailure(PersonalUpdateError.VERIFICATION_FAILED)
-                }
-
-                Files.move(
-                    temporaryApk.toPath(),
-                    downloadedApk.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING,
-                )
-                writePendingRecord(release)
-            }
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private fun verifyApk(file: File, release: PersonalRelease): Boolean {
-        if (!file.isFile || file.length() != release.assetSize || file.length() > APK_LIMIT_BYTES) {
-            return false
-        }
-        val actualDigest = file.inputStream().buffered().use { input ->
-            val digest = MessageDigest.getInstance("SHA-256")
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                digest.update(buffer, 0, count)
-            }
-            digest.digest()
-        }
-        return MessageDigest.isEqual(actualDigest, release.digest) &&
-            verifyApkMetadata(file, release.versionCode)
-    }
-
-    private fun verifyApkMetadata(file: File, expectedVersionCode: Long): Boolean {
-        val flags = PackageManager.PackageInfoFlags.of(
-            PackageManager.GET_SIGNING_CERTIFICATES.toLong(),
-        )
-        val archiveInfo = packageManager.getPackageArchiveInfo(file.absolutePath, flags)
-            ?: return false
-        if (archiveInfo.packageName != appContext.packageName ||
-            archiveInfo.longVersionCode != expectedVersionCode ||
-            archiveInfo.longVersionCode <= BuildConfig.VERSION_CODE.toLong()
-        ) {
-            return false
-        }
-
-        val installedInfo = try {
-            packageManager.getPackageInfo(appContext.packageName, flags)
-        } catch (_: PackageManager.NameNotFoundException) {
-            return false
-        }
-        val archiveSigners = signerDigests(archiveInfo)
-        return archiveSigners.isNotEmpty() && archiveSigners == signerDigests(installedInfo)
-    }
-
-    private fun signerDigests(packageInfo: PackageInfo): Set<String> =
-        packageInfo.signingInfo?.apkContentsSigners
-            ?.map { signature ->
-                MessageDigest.getInstance("SHA-256")
-                    .digest(signature.toByteArray())
-                    .toHex()
-            }
-            ?.toSet()
-            .orEmpty()
 
     private fun openApiConnection(): HttpsURLConnection {
         val url = URL(RELEASE_API_URL)
@@ -467,84 +244,6 @@ internal class PersonalUpdater(context: Context) {
             setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
             setRequestProperty("User-Agent", USER_AGENT)
         }
-    }
-
-    private suspend fun openAssetConnection(release: PersonalRelease): HttpsURLConnection {
-        var url = release.downloadUrl
-        repeat(MAX_REDIRECTS + 1) { redirectCount ->
-            validateAssetUrl(url, release)
-            val connection = (url.openConnection() as HttpsURLConnection).apply {
-                instanceFollowRedirects = false
-                connectTimeout = CONNECT_TIMEOUT_MILLIS
-                readTimeout = READ_TIMEOUT_MILLIS
-                requestMethod = "GET"
-                setRequestProperty("Accept", "application/octet-stream")
-                setRequestProperty("User-Agent", USER_AGENT)
-            }
-            val responseCode = connection.runCancellable { connection.responseCode }
-            if (responseCode !in REDIRECT_CODES) return connection
-
-            if (redirectCount == MAX_REDIRECTS) {
-                connection.disconnect()
-                throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-            }
-            val location = connection.getHeaderField("Location")
-            connection.disconnect()
-            if (location.isNullOrBlank()) {
-                throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-            }
-            url = URL(url, location)
-        }
-        throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-    }
-
-    private fun validateAssetUrl(url: URL, release: PersonalRelease) {
-        if (!PersonalUpdatePolicy.isAllowedAssetUrl(url.toExternalForm(), release.tagName)) {
-            throw UpdateFailure(PersonalUpdateError.DOWNLOAD_FAILED)
-        }
-    }
-
-    private fun readPendingRecord(): PersonalRelease? {
-        if (!pendingRecord.isFile || pendingRecord.length() !in 1..PENDING_RECORD_LIMIT_BYTES) {
-            return null
-        }
-        return try {
-            val json = JSONObject(pendingRecord.readText(Charsets.UTF_8))
-            val tagName = json.getString("tagName")
-            val versionCode = PersonalUpdatePolicy.versionCode(tagName) ?: return null
-            val storedVersionCode = json.getLong("versionCode")
-            if (versionCode != storedVersionCode || versionCode <= BuildConfig.VERSION_CODE.toLong()) {
-                return null
-            }
-            val digestMatch = HEX_DIGEST.matchEntire(json.getString("digest")) ?: return null
-            if (!downloadedApk.isFile || downloadedApk.length() !in 1..APK_LIMIT_BYTES) return null
-            PersonalRelease(
-                versionCode = versionCode,
-                tagName = tagName,
-                digest = digestMatch.value.hexToBytes(),
-                downloadUrl = expectedAssetUrl(tagName),
-                assetSize = downloadedApk.length(),
-            )
-        } catch (_: IOException) {
-            null
-        } catch (_: JSONException) {
-            null
-        }
-    }
-
-    private fun writePendingRecord(release: PersonalRelease) {
-        updatesDirectory.mkdirs()
-        val json = JSONObject()
-            .put("versionCode", release.versionCode)
-            .put("tagName", release.tagName)
-            .put("digest", release.digest.toHex())
-        pendingRecord.writeText(json.toString(), Charsets.UTF_8)
-    }
-
-    private fun clearPendingFiles() {
-        temporaryApk.delete()
-        downloadedApk.delete()
-        pendingRecord.delete()
     }
 
     private fun java.io.InputStream.readBytesBounded(limit: Long): ByteArray {
@@ -573,36 +272,25 @@ internal class PersonalUpdater(context: Context) {
             }
         }
 
-    private fun ByteArray.toHex(): String =
-        joinToString(separator = "") { byte ->
-            (byte.toInt() and 0xff).toString(16).padStart(2, '0')
-        }
-
-    private fun String.hexToBytes(): ByteArray =
-        chunked(2).map { byte -> byte.toInt(16).toByte() }.toByteArray()
+    private fun cleanLegacyUpdaterFiles() {
+        val directory = File(appContext.filesDir, LEGACY_UPDATES_DIRECTORY)
+        File(directory, LEGACY_APK_FILE_NAME).delete()
+        File(directory, LEGACY_TEMP_APK_FILE_NAME).delete()
+        File(directory, LEGACY_PENDING_RECORD_FILE_NAME).delete()
+        directory.delete() // Only succeeds when no unrelated files remain.
+    }
 
     private class UpdateFailure(val reason: PersonalUpdateError) : IOException()
 
     private companion object {
         const val RELEASE_API_URL =
             "https://api.github.com/repos/ssongjay/librepods/releases/latest"
-        const val APK_FILE_NAME = PersonalUpdatePolicy.APK_FILE_NAME
-        const val TEMP_APK_FILE_NAME = "LibrePods-My.tmp.apk"
-        const val PENDING_RECORD_FILE_NAME = "pending.json"
-        const val UPDATES_DIRECTORY = "updates"
-        const val APK_MIME_TYPE = "application/vnd.android.package-archive"
         const val USER_AGENT = "LibrePods-My-Updater"
-        const val METADATA_LIMIT_BYTES = PersonalUpdatePolicy.METADATA_LIMIT_BYTES
-        const val APK_LIMIT_BYTES = PersonalUpdatePolicy.APK_LIMIT_BYTES
-        const val PENDING_RECORD_LIMIT_BYTES = 16L * 1024L
         const val CONNECT_TIMEOUT_MILLIS = 15_000
         const val READ_TIMEOUT_MILLIS = 30_000
-        const val MAX_REDIRECTS = 5
-
-        val HEX_DIGEST = Regex("[0-9a-fA-F]{64}")
-        val REDIRECT_CODES = setOf(301, 302, 303, 307, 308)
-
-        fun expectedAssetUrl(tagName: String): URL =
-            URL(PersonalUpdatePolicy.expectedAssetUrl(tagName))
+        const val LEGACY_UPDATES_DIRECTORY = "updates"
+        const val LEGACY_APK_FILE_NAME = "LibrePods-My.apk"
+        const val LEGACY_TEMP_APK_FILE_NAME = "LibrePods-My.tmp.apk"
+        const val LEGACY_PENDING_RECORD_FILE_NAME = "pending.json"
     }
 }

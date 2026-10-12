@@ -14,7 +14,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,48 +53,26 @@ fun PersonalUpdateCard(modifier: Modifier = Modifier) {
         }
     }
 
-    LaunchedEffect(updater) {
-        updater.restorePendingUpdate()
-    }
-
-    val action: (() -> Unit)? = when (val currentState = state) {
+    val action: (() -> Unit)? = when (state) {
         PersonalUpdateState.Idle,
         PersonalUpdateState.UpToDate,
         -> {
             { launchOnce { updater.checkForUpdate() } }
         }
-
         is PersonalUpdateState.Available -> {
-            { launchOnce { updater.downloadUpdate() } }
+            { launchOnce { updater.openReleaseInBrowser() } }
         }
-
-        is PersonalUpdateState.Ready,
-        is PersonalUpdateState.PermissionRequired,
-        -> {
-            { launchOnce { updater.installUpdate() } }
-        }
-
         is PersonalUpdateState.Error -> {
             { launchOnce { updater.retry() } }
         }
-
-        PersonalUpdateState.Checking,
-        is PersonalUpdateState.Downloading,
-        is PersonalUpdateState.Verifying,
-        -> null
+        PersonalUpdateState.Checking -> null
     }
 
-    val title = when (val currentState = state) {
+    val title = when (state) {
         PersonalUpdateState.Idle -> stringResource(R.string.personal_update_current_version)
         PersonalUpdateState.Checking -> stringResource(R.string.personal_update_checking)
         PersonalUpdateState.UpToDate -> stringResource(R.string.personal_update_up_to_date)
         is PersonalUpdateState.Available -> stringResource(R.string.personal_update_available)
-        is PersonalUpdateState.Downloading -> stringResource(R.string.personal_update_downloading)
-        is PersonalUpdateState.Verifying -> stringResource(R.string.personal_update_verifying)
-        is PersonalUpdateState.Ready -> stringResource(R.string.personal_update_ready)
-        is PersonalUpdateState.PermissionRequired -> stringResource(
-            R.string.personal_update_permission_required,
-        )
         is PersonalUpdateState.Error -> stringResource(R.string.personal_update_failed)
     }
 
@@ -113,21 +90,6 @@ fun PersonalUpdateCard(modifier: Modifier = Modifier) {
             R.string.personal_update_available_description,
             currentState.versionCode,
         )
-        is PersonalUpdateState.Downloading -> stringResource(
-            R.string.personal_update_downloading_description,
-            currentState.percent,
-        )
-        is PersonalUpdateState.Verifying -> stringResource(
-            R.string.personal_update_verifying_description,
-            currentState.versionCode,
-        )
-        is PersonalUpdateState.Ready -> stringResource(
-            R.string.personal_update_ready_description,
-            currentState.versionCode,
-        )
-        is PersonalUpdateState.PermissionRequired -> stringResource(
-            R.string.personal_update_permission_description,
-        )
         is PersonalUpdateState.Error -> errorDescription(currentState.reason)
     }
 
@@ -135,21 +97,14 @@ fun PersonalUpdateCard(modifier: Modifier = Modifier) {
         PersonalUpdateState.Idle,
         PersonalUpdateState.UpToDate,
         -> stringResource(R.string.personal_update_check_button)
-
-        is PersonalUpdateState.Available -> stringResource(R.string.personal_update_download_button)
-        is PersonalUpdateState.Ready -> stringResource(R.string.personal_update_install_button)
-        is PersonalUpdateState.PermissionRequired -> stringResource(
-            R.string.personal_update_permission_button,
-        )
+        is PersonalUpdateState.Available -> stringResource(R.string.personal_update_browser_button)
         is PersonalUpdateState.Error -> when (currentState.retry) {
             PersonalUpdateRetry.CHECK -> stringResource(R.string.personal_update_retry_check_button)
-            PersonalUpdateRetry.DOWNLOAD -> stringResource(R.string.personal_update_retry_download_button)
-            PersonalUpdateRetry.INSTALL -> stringResource(R.string.personal_update_retry_install_button)
+            PersonalUpdateRetry.OPEN_BROWSER -> stringResource(
+                R.string.personal_update_retry_browser_button,
+            )
         }
-        PersonalUpdateState.Checking,
-        is PersonalUpdateState.Downloading,
-        is PersonalUpdateState.Verifying,
-        -> null
+        PersonalUpdateState.Checking -> null
     }
 
     StyledList(
@@ -170,10 +125,7 @@ fun PersonalUpdateCard(modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.primary,
                     )
                 } else {
-                    CircularProgressIndicator(
-                        strokeWidth = 2.dp,
-                        modifier = Modifier,
-                    )
+                    CircularProgressIndicator(strokeWidth = 2.dp)
                 }
             },
         )
@@ -186,11 +138,7 @@ private fun errorDescription(error: PersonalUpdateError): String = when (error) 
     PersonalUpdateError.RATE_LIMITED -> stringResource(R.string.personal_update_error_rate_limited)
     PersonalUpdateError.OFFLINE -> stringResource(R.string.personal_update_error_offline)
     PersonalUpdateError.INVALID_RELEASE -> stringResource(R.string.personal_update_error_invalid_release)
-    PersonalUpdateError.DOWNLOAD_FAILED -> stringResource(R.string.personal_update_error_download)
-    PersonalUpdateError.VERIFICATION_FAILED -> stringResource(
-        R.string.personal_update_error_verification,
-    )
-    PersonalUpdateError.INSTALLER_UNAVAILABLE -> stringResource(
-        R.string.personal_update_error_installer,
+    PersonalUpdateError.BROWSER_UNAVAILABLE -> stringResource(
+        R.string.personal_update_error_browser,
     )
 }
