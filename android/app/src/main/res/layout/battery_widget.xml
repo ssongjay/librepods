@@ -79,7 +79,7 @@
                 android:fontFamily="@font/sf_pro"
                 android:gravity="center"
                 android:textFontWeight="300"
-                android:text="Phone"
+                android:text="@string/ko_runtime_phone"
                 tools:ignore="HardcodedText" />
         </LinearLayout>
 
@@ -141,7 +141,7 @@
                 android:fontFamily="@font/sf_pro"
                 android:gravity="center"
                 android:textFontWeight="300"
-                android:text="Left"
+                android:text="@string/left"
                 tools:ignore="HardcodedText" />
         </LinearLayout>
 
@@ -202,7 +202,7 @@
                 android:textColor="@color/white"
                 android:fontFamily="@font/sf_pro"
                 android:gravity="center"
-                android:text="Right"
+                android:text="@string/right"
                 tools:ignore="HardcodedText" />
         </LinearLayout>
 
@@ -263,7 +263,7 @@
                 android:gravity="center"
                 android:fontFamily="@font/sf_pro"
                 android:textFontWeight="300"
-                android:text="Case"
+                android:text="@string/case_alt"
                 tools:ignore="HardcodedText" />
         </LinearLayout>
     </LinearLayout>

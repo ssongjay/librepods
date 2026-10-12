@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- These strings localize UI text that is still hardcoded upstream. Other locale
+     folders intentionally fall back to English until upstream adopts these keys. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="ko_ui_settings">Settings</string>
+    <string name="ko_ui_play_pause">Play or pause</string>
+    <string name="ko_ui_forward">Next</string>
+    <string name="ko_ui_backward">Back</string>
+    <string name="ko_ui_welcome_to">Welcome to</string>
+    <string name="ko_ui_flavor_label">Build flavor</string>
+    <string name="ko_ui_build_type_label">Build type</string>
+    <string name="ko_ui_unknown_action">Unknown action</string>
+
+    <string name="ko_ui_required_permissions">Required permissions</string>
+    <string name="ko_ui_optional_permissions">Optional permissions</string>
+    <string name="ko_ui_bluetooth">Bluetooth</string>
+    <string name="ko_ui_bluetooth_permission_description">Required to communicate with AirPods</string>
+    <string name="ko_ui_notifications">Notifications</string>
+    <string name="ko_ui_notifications_permission_description">Show battery status</string>
+    <string name="ko_ui_phone">Phone</string>
+    <string name="ko_ui_phone_permission_description">Respond to phone calls with head gestures</string>
+    <string name="ko_ui_display_over_other_apps">Display over other apps</string>
+    <string name="ko_ui_display_over_other_apps_description">Show popups when AirPods are nearby or audio switches to them.</string>
+    <string name="ko_ui_grant_all">Grant all</string>
+
+    <string name="ko_ui_privacy_last_updated">Last updated: 12 October 2026</string>
+    <string name="ko_ui_privacy_overview">Overview</string>
+    <string name="ko_ui_privacy_overview_body">LibrePods does not collect, store, sell, or share personal information for advertising, analytics, tracking, or profiling purposes. The app does not include analytics, crash reporting, telemetry, advertising SDKs, or tracking services.</string>
+    <string name="ko_ui_privacy_local_data_body">Bluetooth features, AirPods information, and app settings are processed locally on your device. They are not sent to the developer.</string>
+    <string name="ko_ui_privacy_software_updates">Software updates</string>
+    <string name="ko_ui_privacy_software_updates_body">LibrePods My connects to GitHub only when you choose to check for or download an update. GitHub receives the ordinary network request needed to serve the release information or APK. The updater does not upload logs, AirPods information, or app settings.</string>
+    <string name="ko_ui_privacy_third_party_services">Third-party services</string>
+    <string name="ko_ui_privacy_contact_methods_body">LibrePods provides several ways to contact me, including email, Discord, and GitHub Issues.</string>
+    <string name="ko_ui_privacy_email">Email</string>
+    <string name="ko_ui_privacy_email_body">If you contact me by email, I receive your email address and any information you choose to include in your message. When using the contact form within LibrePods, your email client will open with a pre-filled email address, the subject line and body that you fill out. The body will also include LibrePods version information and device information to help with troubleshooting.</string>
+    <string name="ko_ui_privacy_email_edit_body">You can edit or remove any of this information before sending the email.</string>
+    <string name="ko_ui_privacy_discord_body">The app provides a link to the LibrePods Discord server. If you choose to join the Discord server, you will be subject to Discord\'s privacy policy.</string>
+    <string name="ko_ui_privacy_discord_visibility_body">I do not receive any information about you from Discord other than what is publicly visible in the Discord server, such as your username, joining date, common servers, and any messages or content you post in the server, unless you choose to share it with me in the Discord server.</string>
+    <string name="ko_ui_privacy_github_issues">GitHub Issues</string>
+    <string name="ko_ui_privacy_github_prefill_body">When creating a GitHub issue through LibrePods, the app will pre-fill the issue form with:</string>
+    <string name="ko_ui_privacy_github_item_version">• LibrePods version name and version code</string>
+    <string name="ko_ui_privacy_github_item_device">• Device manufacturer and model</string>
+    <string name="ko_ui_privacy_github_item_android">• Android build information</string>
+    <string name="ko_ui_privacy_github_item_source">• Installation source (Google Play or GitHub)</string>
+    <string name="ko_ui_privacy_github_submit_body">This information helps diagnose bugs and provide support. No information is sent automatically. The information is only submitted if you choose to create the GitHub issue.</string>
+    <string name="ko_ui_privacy_payments">Payments</string>
+    <string name="ko_ui_privacy_google_play_body">When using the version available on Google Play, purchases are processed by Google Play.</string>
+    <string name="ko_ui_privacy_google_play_details_body">LibrePods verifies the purchase with Google Play on-device, not with a remote server that I control. I do not receive any information about you or your purchase from Google Play. Payment processing is handled entirely by Google Play, and I do not have access to any of your payment information.</string>
+    <string name="ko_ui_privacy_github_sponsors_body">When using the FOSS version available on GitHub, the upgrade button links to GitHub Sponsors. If you choose to sponsor LibrePods, your sponsorship is processed by GitHub.</string>
+    <string name="ko_ui_privacy_github_sponsors_details_body">Your username and country/region are shared with me when you sponsor LibrePods. Depending on your GitHub Sponsors privacy settings, I may also receive your email address.</string>
+    <string name="ko_ui_privacy_contact">Contact</string>
+    <string name="ko_ui_privacy_contact_body">If you have questions about this privacy policy, please contact me via email at privacy@kavish.xyz.</string>
+
+    <string name="ko_ui_enable_hearing_aid">Enable Hearing Aid</string>
+    <string name="ko_ui_enable_hearing_aid_message">Enabling Hearing Aid will disable Headphone Accommodation and Customized Transparency Mode.</string>
+    <string name="ko_ui_enable">Enable</string>
+    <string name="ko_ui_cancel">Cancel</string>
+    <string name="ko_ui_delete">Delete</string>
+    <string name="ko_ui_delete_all">Delete all</string>
+    <string name="ko_ui_share">Share</string>
+    <string name="ko_ui_save">Save</string>
+    <string name="ko_ui_done">Done</string>
+    <string name="ko_ui_continue">Continue</string>
+
+    <string name="ko_ui_total_logs">Total logs: %1$d</string>
+    <string name="ko_ui_log_saved_successfully">Log saved successfully</string>
+    <string name="ko_ui_failed_to_save_log">Failed to save log: %1$s</string>
+    <string name="ko_ui_troubleshooting_step_xposed">First, let\'s ensure the Xposed module is properly configured. Tap the button below to check Xposed scope settings.</string>
+    <string name="ko_ui_troubleshooting_step_case">Please put your AirPods in the case and close it so they disconnect completely.</string>
+    <string name="ko_ui_troubleshooting_step_preparing">Preparing to collect logs… Please wait.</string>
+    <string name="ko_ui_troubleshooting_step_connect">Now, open the AirPods case and connect your AirPods. Logs are being collected. Connection will be detected automatically, or you can manually stop logging when you\'re done.</string>
+    <string name="ko_ui_troubleshooting_step_complete">Log collection complete! You can now save or share the logs.</string>
+    <string name="ko_ui_open_xposed_settings">Open Xposed settings</string>
+    <string name="ko_ui_log_saved_named">Log saved: %1$s</string>
+    <string name="ko_ui_error_collecting_logs">Error collecting logs: %1$s</string>
+    <string name="ko_ui_preparing">Preparing…</string>
+    <string name="ko_ui_collecting_logs">Collecting logs…</string>
+    <string name="ko_ui_stop_collection">Stop collection</string>
+    <string name="ko_ui_log_collection_stopped">Log collection stopped</string>
+    <string name="ko_ui_share_log_file">Share log file</string>
+    <string name="ko_ui_delete_log_file">Delete log file</string>
+    <string name="ko_ui_delete_log_file_confirm">Are you sure you want to delete this log file? This action cannot be undone.</string>
+    <string name="ko_ui_log_file_deleted">Log file deleted</string>
+    <string name="ko_ui_failed_to_delete_log_file">Failed to delete log file</string>
+    <string name="ko_ui_delete_all_logs">Delete all logs</string>
+    <string name="ko_ui_delete_all_logs_confirm">Are you sure you want to delete all log files? This action cannot be undone and will remove %1$d log files.</string>
+    <string name="ko_ui_deleted_log_files">Deleted %1$d log files</string>
+    <string name="ko_ui_failed_to_delete_log_files">Failed to delete log files</string>
+    <string name="ko_ui_error_loading_log_content">Error loading log content: %1$s</string>
+    <string name="ko_ui_log_content">Log content</string>
+
+    <string name="ko_ui_velocity">Velocity</string>
+    <string name="ko_ui_test_head_gestures">Test head gestures</string>
+    <string name="ko_ui_yes_gesture_detected">“Yes” gesture detected.</string>
+    <string name="ko_ui_no_gesture_detected">“No” gesture detected.</string>
+    <string name="ko_ui_horizontal">Horizontal</string>
+    <string name="ko_ui_vertical">Vertical</string>
+    <string name="ko_ui_low">Low</string>
+    <string name="ko_ui_mid">Mid</string>
+    <string name="ko_ui_high">High</string>
+</resources>

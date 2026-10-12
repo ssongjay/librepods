@@ -78,6 +78,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -98,6 +99,7 @@ import kotlinx.coroutines.withContext
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.utils.LogCollector
 import java.io.File
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -121,6 +123,7 @@ fun CustomIconButton(
 @Composable
 fun TroubleshootingScreen() {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -152,8 +155,16 @@ fun TroubleshootingScreen() {
     val accentColor = if (isSystemInDarkTheme()) Color(0xFF007AFF) else Color(0xFF3C6DF5)
     val buttonBgColor = if (isSystemInDarkTheme()) Color(0xFF333333) else Color(0xFFDDDDDD)
 
-    var instructionText by remember { mutableStateOf("") }
     val isDarkTheme = isSystemInDarkTheme()
+    val instructionText = when (currentStep) {
+        0 -> stringResource(R.string.ko_ui_troubleshooting_step_xposed)
+        1 -> stringResource(R.string.ko_ui_troubleshooting_step_case)
+        2 -> stringResource(R.string.ko_ui_troubleshooting_step_preparing)
+        3 -> stringResource(R.string.ko_ui_troubleshooting_step_connect)
+        4 -> stringResource(R.string.ko_ui_troubleshooting_step_complete)
+        else -> ""
+    }
+    val shareLogFileLabel = stringResource(R.string.ko_ui_share_log_file)
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
@@ -176,29 +187,18 @@ fun TroubleshootingScreen() {
                         outputStream.write(logContent.toByteArray())
                     }
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Log saved successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, resources.getString(R.string.ko_ui_log_saved_successfully), Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
                             context,
-                            "Failed to save log: ${e.localizedMessage}",
+                            resources.getString(R.string.ko_ui_failed_to_save_log, e.localizedMessage),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
                 }
             }
-        }
-    }
-
-    LaunchedEffect(currentStep) {
-        instructionText = when (currentStep) {
-            0 -> "First, let's ensure Xposed module is properly configured. Tap the button below to check Xposed scope settings."
-            1 -> "Please put your AirPods in the case and close it, so they disconnect completely."
-            2 -> "Preparing to collect logs... Please wait."
-            3 -> "Now, open the AirPods case and connect your AirPods. Logs are being collected. Connection will be detected automatically, or you can manually stop logging when you're done."
-            4 -> "Log collection complete! You can now save or share the logs."
-            else -> ""
         }
     }
 
@@ -276,7 +276,7 @@ fun TroubleshootingScreen() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Total Logs: ${savedLogs.size}",
+                            text = stringResource(R.string.ko_ui_total_logs, savedLogs.size),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = textColor
@@ -289,7 +289,7 @@ fun TroubleshootingScreen() {
                                     contentColor = MaterialTheme.colorScheme.error
                                 )
                             ) {
-                                Text("Delete All")
+                                Text(stringResource(R.string.ko_ui_delete_all))
                             }
                         }
                     }
@@ -314,7 +314,7 @@ fun TroubleshootingScreen() {
                                 )
 
                                 Text(
-                                    text = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.US)
+                                    text = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
                                         .format(Date(logFile.lastModified())),
                                     fontSize = 14.sp,
                                     color = textColor.copy(alpha = 0.6f)
@@ -329,7 +329,7 @@ fun TroubleshootingScreen() {
                             ) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = "Delete",
+                                    contentDescription = stringResource(R.string.ko_ui_delete),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -423,7 +423,7 @@ fun TroubleshootingScreen() {
                                         contentColor = textColor
                                     )
                                 ) {
-                                    Text("Open Xposed Settings")
+                                    Text(stringResource(R.string.ko_ui_open_xposed_settings))
                                 }
                             }
 
@@ -480,7 +480,7 @@ fun TroubleshootingScreen() {
                                                         selectedLogFile = it
                                                         Toast.makeText(
                                                             context,
-                                                            "Log saved: ${it.name}",
+                                                            resources.getString(R.string.ko_ui_log_saved_named, it.name),
                                                             Toast.LENGTH_SHORT
                                                         ).show()
                                                     }
@@ -489,7 +489,7 @@ fun TroubleshootingScreen() {
                                                 withContext(Dispatchers.Main) {
                                                     Toast.makeText(
                                                         context,
-                                                        "Error collecting logs: ${e.message}",
+                                                        resources.getString(R.string.ko_ui_error_collecting_logs, e.message),
                                                         Toast.LENGTH_SHORT
                                                     ).show()
                                                     isCollectingLogs = false
@@ -505,7 +505,7 @@ fun TroubleshootingScreen() {
                                         contentColor = textColor
                                     )
                                 ) {
-                                    Text("Continue")
+                                    Text(stringResource(R.string.ko_ui_continue))
                                 }
                             }
 
@@ -521,7 +521,7 @@ fun TroubleshootingScreen() {
                                     Spacer(modifier = Modifier.height(8.dp))
 
                                     Text(
-                                        text = if (currentStep == 2) "Preparing..." else "Collecting logs...",
+                                        text = if (currentStep == 2) stringResource(R.string.ko_ui_preparing) else stringResource(R.string.ko_ui_collecting_logs),
                                         fontSize = 14.sp,
                                         color = textColor
                                     )
@@ -545,7 +545,7 @@ fun TroubleshootingScreen() {
                                                         isCollectingLogs = false
                                                         Toast.makeText(
                                                             context,
-                                                            "Log collection stopped",
+                                                            resources.getString(R.string.ko_ui_log_collection_stopped),
                                                             Toast.LENGTH_SHORT
                                                         ).show()
                                                     }
@@ -559,7 +559,7 @@ fun TroubleshootingScreen() {
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                         ) {
-                                            Text("Stop Collection")
+                                            Text(stringResource(R.string.ko_ui_stop_collection))
                                         }
                                     }
                                 }
@@ -590,7 +590,7 @@ fun TroubleshootingScreen() {
                                                 context.startActivity(
                                                     Intent.createChooser(
                                                         shareIntent,
-                                                        "Share log file"
+                                                        shareLogFileLabel
                                                     )
                                                 )
                                             }
@@ -604,10 +604,10 @@ fun TroubleshootingScreen() {
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Share,
-                                            contentDescription = "Share"
+                                            contentDescription = stringResource(R.string.ko_ui_share)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Share")
+                                        Text(stringResource(R.string.ko_ui_share))
                                     }
 
                                     Spacer(modifier = Modifier.width(16.dp))
@@ -629,10 +629,10 @@ fun TroubleshootingScreen() {
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_save),
-                                            contentDescription = "Save"
+                                            contentDescription = stringResource(R.string.ko_ui_save)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Save")
+                                        Text(stringResource(R.string.ko_ui_save))
                                     }
                                 }
 
@@ -650,7 +650,7 @@ fun TroubleshootingScreen() {
                                         contentColor = textColor
                                     )
                                 ) {
-                                    Text("Done")
+                                    Text(stringResource(R.string.ko_ui_done))
                                 }
                             }
                         }
@@ -661,9 +661,9 @@ fun TroubleshootingScreen() {
             if (showDeleteDialog && selectedLogFile != null) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Delete Log File") },
+                    title = { Text(stringResource(R.string.ko_ui_delete_log_file)) },
                     text = {
-                        Text("Are you sure you want to delete this log file? This action cannot be undone.")
+                        Text(stringResource(R.string.ko_ui_delete_log_file_confirm))
                     },
                     confirmButton = {
                         TextButton(
@@ -673,14 +673,14 @@ fun TroubleshootingScreen() {
                                         savedLogs.remove(file)
                                         Toast.makeText(
                                             context,
-                                            "Log file deleted",
+                                            resources.getString(R.string.ko_ui_log_file_deleted),
                                             Toast.LENGTH_SHORT
                                         )
                                             .show()
                                     } else {
                                         Toast.makeText(
                                             context,
-                                            "Failed to delete log file",
+                                            resources.getString(R.string.ko_ui_failed_to_delete_log_file),
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }
@@ -688,12 +688,12 @@ fun TroubleshootingScreen() {
                                 showDeleteDialog = false
                             }
                         ) {
-                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.ko_ui_delete), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDeleteDialog = false }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.ko_ui_cancel))
                         }
                     }
                 )
@@ -702,9 +702,9 @@ fun TroubleshootingScreen() {
             if (showDeleteAllDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteAllDialog = false },
-                    title = { Text("Delete All Logs") },
+                    title = { Text(stringResource(R.string.ko_ui_delete_all_logs)) },
                     text = {
-                        Text("Are you sure you want to delete all log files? This action cannot be undone and will remove ${savedLogs.size} log files.")
+                        Text(stringResource(R.string.ko_ui_delete_all_logs_confirm, savedLogs.size))
                     },
                     confirmButton = {
                         TextButton(
@@ -721,13 +721,13 @@ fun TroubleshootingScreen() {
                                             savedLogs.clear()
                                             Toast.makeText(
                                                 context,
-                                                "Deleted $deletedCount log files",
+                                                resources.getString(R.string.ko_ui_deleted_log_files, deletedCount),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         } else {
                                             Toast.makeText(
                                                 context,
-                                                "Failed to delete log files",
+                                                resources.getString(R.string.ko_ui_failed_to_delete_log_files),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         }
@@ -736,12 +736,12 @@ fun TroubleshootingScreen() {
                                 showDeleteAllDialog = false
                             }
                         ) {
-                            Text("Delete All", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.ko_ui_delete_all), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDeleteAllDialog = false }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.ko_ui_cancel))
                         }
                     }
                 )
@@ -766,7 +766,7 @@ fun TroubleshootingScreen() {
                             logContent = try {
                                 selectedLogFile?.readText() ?: ""
                             } catch (e: Exception) {
-                                "Error loading log content: ${e.message}"
+                                resources.getString(R.string.ko_ui_error_loading_log_content, e.message)
                             }
                             isLoadingLogContent = false
                             logContentLoaded = true
@@ -786,7 +786,7 @@ fun TroubleshootingScreen() {
                             .padding(bottom = 12.dp),
                     ) {
                         Text(
-                            text = selectedLogFile?.name ?: "Log Content",
+                            text = selectedLogFile?.name ?: stringResource(R.string.ko_ui_log_content),
                             style = TextStyle(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp,
@@ -795,7 +795,7 @@ fun TroubleshootingScreen() {
                             color = textColor
                         )
                         Text(
-                            text = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.US)
+                            text = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
                                 .format(Date(selectedLogFile?.lastModified() ?: 0)),
                             fontSize = 14.sp,
                             color = textColor.copy(alpha = 0.7f),
@@ -866,7 +866,7 @@ fun TroubleshootingScreen() {
                                     context.startActivity(
                                         Intent.createChooser(
                                             shareIntent,
-                                            "Share log file"
+                                            shareLogFileLabel
                                         )
                                     )
                                 }
@@ -880,10 +880,10 @@ fun TroubleshootingScreen() {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = "Share"
+                                contentDescription = stringResource(R.string.ko_ui_share)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Share")
+                            Text(stringResource(R.string.ko_ui_share))
                         }
 
                         Button(
@@ -901,10 +901,10 @@ fun TroubleshootingScreen() {
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_save),
-                                contentDescription = "Save"
+                                contentDescription = stringResource(R.string.ko_ui_save)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Save")
+                            Text(stringResource(R.string.ko_ui_save))
                         }
                     }
                 }

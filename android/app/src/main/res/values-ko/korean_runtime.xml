@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ko_runtime_background_channel">백그라운드 연결</string>
+    <string name="ko_runtime_connection_channel">AirPods 연결</string>
+    <string name="ko_runtime_connection_issue_channel">AirPods 연결 문제</string>
+    <string name="ko_runtime_connection_issue_channel_description">AirPods 연결 문제를 알려줘요.</string>
+    <string name="ko_runtime_background_title">AirPods 연결 대기 중</string>
+    <string name="ko_runtime_background_description">AirPods 연결을 감지하고 관리하기 위해 앱이 실행 중이에요.</string>
+    <string name="ko_runtime_connection_issue_title">AirPods에 연결하지 못했어요</string>
+    <string name="ko_runtime_connection_issue_description">블루투스 연결을 확인하고 다시 시도해 주세요.</string>
+    <string name="ko_runtime_call_answered">머리 동작으로 전화를 받았어요.</string>
+    <string name="ko_runtime_call_answer_failed">전화를 받지 못했어요.</string>
+    <string name="ko_runtime_call_rejected">머리 동작으로 전화를 거절했어요.</string>
+    <string name="ko_runtime_call_reject_failed">전화를 거절하지 못했어요.</string>
+    <string name="ko_runtime_socket_failed">AirPods에 연결하지 못했어요. 블루투스를 확인하고 다시 시도해 주세요.</string>
+    <string name="ko_runtime_socket_timeout">AirPods 연결 시간이 초과됐어요. 다시 시도해 주세요.</string>
+    <string name="ko_runtime_phone">폰</string>
+    <string name="ko_runtime_reconnect">다시 연결</string>
+    <string name="ko_runtime_close">닫기</string>
+    <string name="ko_runtime_device_icon">기기 아이콘</string>
+    <string name="ko_runtime_loading">불러오는 중…</string>
+    <string name="ko_runtime_language_title">언어</string>
+    <string name="ko_runtime_language_description">이 앱에서 사용할 언어를 골라 주세요.</string>
+    <string name="ko_runtime_unknown">알 수 없음</string>
+</resources>

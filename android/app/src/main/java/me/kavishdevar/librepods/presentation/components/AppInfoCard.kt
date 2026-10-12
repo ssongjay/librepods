@@ -40,12 +40,12 @@ fun AppInfoCard(
         )
 
         StyledListItem(
-            name = stringResource(R.string.flavor),
+            name = stringResource(R.string.ko_ui_flavor_label),
             description = BuildConfig.FLAVOR,
         )
 
         StyledListItem(
-            name = stringResource(R.string.build_type),
+            name = stringResource(R.string.ko_ui_build_type_label),
             description = BuildConfig.BUILD_TYPE,
         )
     }

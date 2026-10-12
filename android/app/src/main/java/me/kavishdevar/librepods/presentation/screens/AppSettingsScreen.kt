@@ -82,6 +82,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import me.kavishdevar.librepods.BuildConfig
 import me.kavishdevar.librepods.R
 import me.kavishdevar.librepods.presentation.components.AppInfoCard
+import me.kavishdevar.librepods.presentation.components.AppLanguageCard
 import me.kavishdevar.librepods.presentation.components.PersonalUpdateCard
 import me.kavishdevar.librepods.presentation.components.DeviceInfoCard
 import me.kavishdevar.librepods.presentation.components.StyledBottomSheet
@@ -135,6 +136,8 @@ fun AppSettingsScreen(
         Spacer(modifier = Modifier.height(topPadding))
 
         if (BuildConfig.APPLICATION_ID.endsWith(".inje")) {
+            AppLanguageCard()
+            Spacer(modifier = Modifier.height(16.dp))
             PersonalUpdateCard()
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -519,7 +522,7 @@ fun AppSettingsScreen(
                         Toast.makeText(context, successText, Toast.LENGTH_SHORT).show()
                     }) {
                     Text(
-                        "Save",
+                        stringResource(R.string.ko_ui_save),
                         fontFamily = FontFamily(Font(R.font.sf_pro)),
                         fontWeight = FontWeight.Medium
                     )
@@ -528,7 +531,7 @@ fun AppSettingsScreen(
                 TextButton(
                     onClick = { viewModel.setShowCameraDialog(false) }) {
                     Text(
-                        "Cancel",
+                        stringResource(R.string.ko_ui_cancel),
                         fontFamily = FontFamily(Font(R.font.sf_pro)),
                         fontWeight = FontWeight.Medium
                     )

@@ -1,6 +1,8 @@
 package me.kavishdevar.librepods
 
 import android.app.Application
+import android.app.LocaleManager
+import android.os.LocaleList
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -14,11 +16,19 @@ import me.kavishdevar.librepods.utils.XposedState
 class LibrePodsApplication: Application(), XposedServiceHelper.OnServiceListener, DefaultLifecycleObserver {
 
     override fun onCreate() {
+        super<Application>.onCreate()
+
+        if (BuildConfig.APPLICATION_ID.endsWith(".inje")) {
+            val preferences = getSharedPreferences("settings", MODE_PRIVATE)
+            if (!preferences.getBoolean("korean_ui_initialized", false)) {
+                getSystemService(LocaleManager::class.java).applicationLocales = LocaleList.forLanguageTags("ko")
+                preferences.edit().putBoolean("korean_ui_initialized", true).apply()
+            }
+        }
+
         XposedServiceHelper.registerListener(this)
         BillingManager.provider = BillingProviderFactory.create(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-
-        super<Application>.onCreate()
 
     }
 

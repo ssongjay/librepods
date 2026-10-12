@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Personal runtime strings intentionally support Korean and English fallback. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="ko_runtime_background_channel">Background connection</string>
+    <string name="ko_runtime_connection_channel">AirPods connection</string>
+    <string name="ko_runtime_connection_issue_channel">AirPods connection issues</string>
+    <string name="ko_runtime_connection_issue_channel_description">Notifications about AirPods connection problems</string>
+    <string name="ko_runtime_background_title">Waiting for AirPods</string>
+    <string name="ko_runtime_background_description">The app is running to detect and manage AirPods connections.</string>
+    <string name="ko_runtime_connection_issue_title">AirPods connection issue</string>
+    <string name="ko_runtime_connection_issue_description">Unable to connect to AirPods. Check the Bluetooth connection and try again.</string>
+    <string name="ko_runtime_call_answered">Call answered with a head gesture</string>
+    <string name="ko_runtime_call_answer_failed">Unable to answer the call</string>
+    <string name="ko_runtime_call_rejected">Call declined with a head gesture</string>
+    <string name="ko_runtime_call_reject_failed">Unable to decline the call</string>
+    <string name="ko_runtime_socket_failed">Unable to connect to AirPods. Check Bluetooth and try again.</string>
+    <string name="ko_runtime_socket_timeout">AirPods connection timed out. Please try again.</string>
+    <string name="ko_runtime_phone">Phone</string>
+    <string name="ko_runtime_reconnect">Reconnect</string>
+    <string name="ko_runtime_close">Close</string>
+    <string name="ko_runtime_device_icon">Device icon</string>
+    <string name="ko_runtime_loading">Loading…</string>
+    <string name="ko_runtime_language_title">Language</string>
+    <string name="ko_runtime_language_description">Choose the language for this app.</string>
+    <string name="ko_runtime_language_korean" translatable="false">한국어</string>
+    <string name="ko_runtime_language_english" translatable="false">English</string>
+    <string name="ko_runtime_unknown">Unknown</string>
+</resources>
